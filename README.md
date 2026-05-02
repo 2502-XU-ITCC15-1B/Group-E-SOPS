@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Strucsure — Web-Based Organizational Profiling System (SOPS)
 
 The Organization Profiling System is a web-based application built with Firebase to manage member information and organizational duties for a small organization. It uses Firebase Authentication, Firestore, role-based access (Admin, Executive, Member), and Firebase Hosting.
@@ -45,3 +46,6 @@ npm run deploy
 ```
 
 Docker (frontend + emulators): see [`docker-compose.yml`](docker-compose.yml).
+=======
+# Group-E-SOPS
+>>>>>>> group-e/main
