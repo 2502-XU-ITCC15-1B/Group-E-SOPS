@@ -1,0 +1,27 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_FIREBASE_USE_EMULATORS=true
+
+  firebase:
+    image: andreysenov/firebase-tools:latest
+    container_name: strucsure_firebase_emulators
+    ports:
+      - "4000:4000" # Emulator Suite UI
+      - "5001:5001" # Cloud Functions Emulator
+      - "8080:8080" # Firestore Emulator
+      - "9099:9099" # Auth Emulator
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "firebase emulators:start --import=./firebase-data --export-on-exit --only auth,firestore,functions"

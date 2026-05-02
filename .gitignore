@@ -1,0 +1,32 @@
+node_modules/
+.cache/
+build/
+frontend/build/
+
+# Logs & local Firebase
+*.log
+firestore-debug.log
+firebase-debug.log
+firebase-data/
+
+# Secrets (never commit)
+serviceAccountKey.json
+**/serviceAccountKey.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS & editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+
+# Test / coverage
+coverage/
+
+# Optional: large local specs (uncomment if PDFs should stay only on your machine)
+# *.pdf

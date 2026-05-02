@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions for role checking (simplified - reads from Firestore)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      // Check if user document exists before reading role
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDocPath) ? get(userDocPath).data.role : null;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && getUserRole() == role;
+    }
+    
+    function hasAnyRole(roles) {
+      return isAuthenticated() && getUserRole() in roles;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return hasRole('admin');
+    }
+    
+    function isExecutiveOrAdmin() {
+      return hasAnyRole(['executive', 'admin']);
+    }
+    
+    // Users collection - users can read their own data, admins can read all
+    // Users CANNOT modify their own role (security - only admins can change roles)
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isExecutiveOrAdmin();
+      allow create: if isOwner(userId);
+      // Users can update their own profile EXCEPT role field
+      // Only admins can change roles
+      allow update: if (
+        isOwner(userId) && 
+        !('role' in request.resource.data.diff(resource.data).affectedKeys())
+      ) || (
+        isAdmin() && 
+        request.resource.data.role in ['member', 'executive', 'admin']
+      );
+      // Users can delete their own profile, admins can delete any profile
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // Activities collection - authenticated users can read all, write their own or if executive/admin
+    match /activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(resource.data.userId) || isExecutiveOrAdmin();
+    }
+    
+    // Projects collection - all authenticated users can read, only executives and admins can write
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow write: if isExecutiveOrAdmin();
+    }
+    
+    // Tasks collection - authenticated users can read all, write their own or if executive/admin
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(resource.data.assignedTo) || isExecutiveOrAdmin();
+    }
+    
+    // Meetings collection - all authenticated users can read, only executives and admins can write
+    match /meetings/{meetingId} {
+      allow read: if isAuthenticated();
+      allow write: if isExecutiveOrAdmin();
+    }
+    
+    // Reports collection - all authenticated users can read, only executives and admins can write
+    match /reports/{reportId} {
+      allow read: if isAuthenticated();
+      allow write: if isExecutiveOrAdmin();
+    }
+    
+    // Role audit log - only admins can read/write (optional, for tracking changes)
+    match /roleAudit/{auditId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Announcements collection - all authenticated users can read, only executives and admins can create
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow create: if isExecutiveOrAdmin();
+      allow update, delete: if isExecutiveOrAdmin();
+    }
+    
+    // Default rule - deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
