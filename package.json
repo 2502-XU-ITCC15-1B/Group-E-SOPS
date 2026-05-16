@@ -1,0 +1,15 @@
+{
+  "name": "strucsure-sops-monorepo",
+  "private": true,
+  "description": "Root workspace for Strucsure SOPS — run installs and deploy from here.",
+  "scripts": {
+    "install:all": "npm install --prefix frontend && npm install --prefix functions",
+    "start": "npm start --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "deploy": "npm run build --prefix frontend && firebase deploy",
+    "test": "npm test --prefix frontend"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.9.0"
+  }
+}

@@ -1,0 +1,32 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      # Set to 'false' to connect to live Firebase services (production mode)
+      - REACT_APP_FIREBASE_USE_EMULATORS=false
+
+  firebase:
+    image: andreysenov/firebase-tools:latest
+    container_name: strucsure_firebase_emulators
+    # fix(docker): Update port mappings to match firebase.json emulator config.
+    # This ensures the host machine can access the emulators on the correct ports.
+    ports:
+      - "9300:9300" # Auth Emulator
+      - "9301:9301" # Functions Emulator
+      - "9302:9302" # Firestore Emulator
+      - "9303:9303" # Storage Emulator
+      - "9304:9304" # Emulator Suite UI
+      - "9307:9307" # Emulator Hub
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "firebase emulators:start --import=./firebase-data --export-on-exit"
