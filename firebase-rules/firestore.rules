@@ -6,16 +6,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getUserRole(role) {
-      return request.auth.token.role;
+    function getUserRole() {
+      // Check if user document exists before reading role
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDocPath) ? get(userDocPath).data.role : null;
     }
 
     function hasRole(role) {
-      return isAuthenticated() && request.auth.token.role == role;
+      return isAuthenticated() && getUserRole() == role;
     }
 
     function hasAnyRole(roles) {
-      return isAuthenticated() && request.auth.token.role in roles;
+      return isAuthenticated() && getUserRole() in roles;
     }
 
     function isOwner(userId) {
@@ -91,26 +93,6 @@ service cloud.firestore {
       allow create: if isExecutiveOrAdmin();
       allow update, delete: if isExecutiveOrAdmin();
     }
-
-    // Notifications collection - users can read their own notifications, executives/admins can read all
-    match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isExecutiveOrAdmin());
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isExecutiveOrAdmin());
-    }
-
-    // System Logs collection - only executives and admins can read/write
-    match /systemLogs/{logId} {
-      allow read, write: if isExecutiveOrAdmin();
-    }
-
-    // Member directory (imported from Excel/CSV) — any signed-in user can read/update.
-    // (Tighten to isExecutiveOrAdmin() if only officers should import.)
-    match /directory/{entryId} {
-      allow read: if isAuthenticated();
-      allow write: if isExecutiveOrAdmin();
-    }
-
     // Default rule - deny all other access
     match /{document=**} {
       allow read, write: if false;

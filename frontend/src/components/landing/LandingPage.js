@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Calendar } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 const LandingPage = () => {
   const activities = [
@@ -32,6 +33,10 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <Helmet>
+        <title>XCITeS — Student Organization Profiling System</title>
+        <meta name="description" content="Xavier Circle of Information Technology Students official profiling and management system." />
+      </Helmet>
       {/* Header with Get Started Button */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -138,4 +143,3 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
-

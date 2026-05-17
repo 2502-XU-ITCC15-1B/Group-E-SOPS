@@ -24,12 +24,8 @@ async function logSystemEvent(event) {
  * @returns {Object} Success status
  */
 exports.setUserRole = functions.https.onCall(async (data, context) => {
-  // Production Debugging: Log the project ID to verify it matches the frontend.
-  console.log(`setUserRole function running in project: ${process.env.GCLOUD_PROJECT}`);
-  console.log(`Request received for UID: ${data.uid} to set role: ${data.role}`);
-  console.log(`Request initiated by UID: ${context.auth?.uid} with email: ${context.auth?.token.email}`);
+  console.log(`setUserRole called by UID: ${context.auth?.uid}`);
 
-  // Check if user is authenticated
   if (!context.auth) {
     throw new functions.https.HttpsError(
       'unauthenticated',
@@ -37,10 +33,10 @@ exports.setUserRole = functions.https.onCall(async (data, context) => {
     );
   }
 
-  // Check if user is admin
-  const callerToken = await admin.auth().getUser(context.auth.uid);
-  const callerRole = callerToken.customClaims?.role || 'member';
-  
+  // Verify caller is admin via their custom claim
+  const callerRecord = await admin.auth().getUser(context.auth.uid);
+  const callerRole = callerRecord.customClaims?.role || 'member';
+
   if (callerRole !== 'admin') {
     throw new functions.https.HttpsError(
       'permission-denied',
@@ -48,7 +44,6 @@ exports.setUserRole = functions.https.onCall(async (data, context) => {
     );
   }
 
-  // Validate input
   const { uid, role } = data;
   if (!uid || !role) {
     throw new functions.https.HttpsError(
@@ -65,52 +60,32 @@ exports.setUserRole = functions.https.onCall(async (data, context) => {
     );
   }
 
-  try {
-    // Get old role BEFORE updating
-    const userRef = admin.firestore().collection('users').doc(uid);
-    const userDoc = await userRef.get();
-    const oldRole = userDoc.exists ? userDoc.data().role : 'unknown';
+  // Get old role BEFORE updating
+  const userRef = admin.firestore().collection('users').doc(uid);
+  const userDoc = await userRef.get();
+  const oldRole = userDoc.exists ? userDoc.data().role : 'unknown';
 
-    // Set custom claim
-    await admin.auth().setCustomUserClaims(uid, { role });
+  // Update the custom claim
+  await admin.auth().setCustomUserClaims(uid, { role });
 
-    // **CRITICAL SECURITY STEP**
-    // Revoke the user's refresh tokens. This forces them to log in again and
-    // receive a new ID token with the updated role. It prevents a downgraded
-    // user from continuing to use their old, high-privilege token for up to an hour.
-    if (oldRole !== role) {
-      console.log(`Role changed for ${uid} from '${oldRole}' to '${role}'. Revoking tokens.`);
-      await admin.auth().revokeRefreshTokens(uid);
-    }
+  // Update Firestore — this triggers the onSnapshot listener on the client
+  await userRef.set(
+    { role, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
+    { merge: true }
+  );
 
-    // Update Firestore user document
-    await userRef.set(
-      { role, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
-      { merge: true }
-    );
+  // Audit log
+  await admin.firestore().collection('roleAudit').add({
+    targetUserId: uid,
+    changedBy: context.auth.uid,
+    changedByEmail: context.auth.token.email,
+    oldRole,
+    newRole: role,
+    timestamp: admin.firestore.FieldValue.serverTimestamp()
+  });
 
-    // Log the role change for audit
-    await admin.firestore().collection('roleAudit').add({
-      targetUserId: uid,
-      changedBy: context.auth.uid,
-      changedByEmail: context.auth.token.email,
-      oldRole: oldRole,
-      newRole: role,
-      timestamp: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    return { 
-      success: true, 
-      message: `User role updated to ${role}` 
-    };
-  } catch (error) {
-    console.error('Error setting user role:', error);
-    throw new functions.https.HttpsError(
-      'internal',
-      'Failed to update user role.',
-      error.message
-    );
-  }
+  console.log(`Role updated: ${uid} from '${oldRole}' to '${role}'`);
+  return { success: true, message: `User role updated to ${role}` };
 });
 
 /**

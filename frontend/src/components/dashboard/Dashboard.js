@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Helmet } from 'react-helmet-async';
 import {
   Home,
   Users,
@@ -510,6 +511,10 @@ const Dashboard = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Dashboard — XCITeS SOPS</title>
+        <meta name="description" content="Your XCITeS member dashboard." />
+      </Helmet>
       <style>{`
           html.dark .text-gray-600 { color: #cbd5e1 !important; }
           html.dark .text-gray-500 { color: #9aa6b2 !important; }
@@ -670,7 +675,7 @@ const Dashboard = () => {
                           </div>
                           <div>
                             <span className="font-medium">Phone: </span>
-                            <span>{profileData.phone || 'Not set'}</span>
+                            <span>{profileData.phone ? `+63 ${profileData.phone}` : 'Not set'}</span>
                           </div>
                           <div>
                             <span className="font-medium">Bio: </span>
