@@ -7,13 +7,13 @@ import {
   Home, 
   Users, 
   Shield, 
-  Briefcase,
   LogOut,
   User,
   Bell,
   BookOpen
 } from 'lucide-react';
-import { collection, getDocs, query, orderBy, limit, where, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+
 import { db } from '../../firebase/config';
 
 const Navigation = () => {
@@ -28,15 +28,6 @@ const Navigation = () => {
   const handleDeleteNotification = async (notificationId) => {
     try {
       await deleteDoc(doc(db, 'notifications', notificationId));
-      // Refresh notifications after deletion
-      const snap = await getDocs(query(
-        collection(db, 'notifications'), 
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc'), 
-        limit(10)
-      ));
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setNotifications(list);
     } catch (error) {
       console.error('Error deleting notification:', error);
     }
@@ -44,30 +35,25 @@ const Navigation = () => {
 
   useEffect(() => {
     if (!currentUser || ['/', '/login', '/register'].includes(location.pathname)) return;
-    
-    const loadNotifications = async () => {
-      try {
-        const snap = await getDocs(query(
-          collection(db, 'notifications'), 
-          where('userId', '==', currentUser.uid),
-          orderBy('createdAt', 'desc'), 
-          limit(10)
-        ));
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setNotifications(list);
-      } catch (e) {
-        console.warn('Failed to load notifications', e);
-      }
-    };
-    
-    // Initial load
-    loadNotifications();
-    
-    // Poll every 5 seconds for updates (works with ad blockers)
-    const interval = setInterval(loadNotifications, 5000);
-    
-    return () => clearInterval(interval);
+
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      orderBy('createdAt', 'desc'),
+      limit(10)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        setNotifications(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (err) => console.warn('Notifications listener error', err)
+    );
+
+    return unsubscribe;
   }, [currentUser, location.pathname]);
+
 
   // Don't show navigation on landing page, login, or register
   if (!currentUser || ['/', '/login', '/register'].includes(location.pathname)) return null;
@@ -78,7 +64,6 @@ const Navigation = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/dashboard" className="flex-shrink-0 flex items-center">
-              <Briefcase className="h-8 w-8 text-blue-600" />
               <span className="ml-2 text-lg font-semibold text-gray-900">
                 
               </span>

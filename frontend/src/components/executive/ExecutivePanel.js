@@ -28,6 +28,7 @@ import {
   Building2,
   ChevronRight
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 
 const ExecutivePanel = () => {
@@ -55,6 +56,24 @@ const ExecutivePanel = () => {
     dueDate: '',
     assignedTo: ''
   });
+
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('theme') === 'dark';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleThemeChange = () => {
+      setIsDarkMode(localStorage.getItem('theme') === 'dark');
+    };
+    window.addEventListener('theme-change', handleThemeChange);
+    window.addEventListener('storage', handleThemeChange);
+    return () => {
+      window.removeEventListener('theme-change', handleThemeChange);
+      window.removeEventListener('storage', handleThemeChange);
+    };
+  }, []);
 
   const departments = [
     {
@@ -442,6 +461,10 @@ console.log('Active users count:', activeUsersCount);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
+      <Helmet>
+        <title>Executive Dashboard — XCITeS SOPS</title>
+        <meta name="description" content="XCITeS executive management dashboard." />
+      </Helmet>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Executive Dashboard</h1>

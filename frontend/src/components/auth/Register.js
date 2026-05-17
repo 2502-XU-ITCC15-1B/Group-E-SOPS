@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signup, signInWithGoogle, signInWithFacebook, signInWithGithub } = useAuth();
+  const { signup, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
@@ -53,6 +54,10 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-[#241f1f] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Helmet>
+        <title>Register — XCITeS SOPS</title>
+        <meta name="description" content="Create your account for the XCITeS Student Organization Profiling System." />
+      </Helmet>
       <div className="w-full max-w-5xl bg-white rounded-[36px] shadow-2xl overflow-hidden flex flex-col lg:flex-row">
         {/* Intro panel */}
         <div className="relative lg:w-1/2 bg-gradient-to-br from-[#f04b4b] via-[#f36e6e] to-[#f7b1ab] text-white p-10 lg:p-12 flex flex-col justify-center rounded-tr-[180px] rounded-br-[180px] overflow-hidden">
@@ -217,40 +222,16 @@ const Register = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="flex justify-center">
                 <button
                   type="button"
                   onClick={() => handleSocialSignIn('Google', signInWithGoogle)}
                   disabled={loading}
-                  className="h-12 rounded-2xl bg-[#f9ddda] flex items-center justify-center hover:bg-[#f6c7c2] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="h-12 w-full md:w-1/2 rounded-2xl bg-[#f9ddda] flex items-center justify-center hover:bg-[#f6c7c2] transition disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <img 
                     src="/images/google-icon.png" 
                     alt="Google" 
-                    className="h-6 w-6 object-contain"
-                  />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSocialSignIn('Facebook', signInWithFacebook)}
-                  disabled={loading}
-                  className="h-12 rounded-2xl bg-[#f9ddda] flex items-center justify-center hover:bg-[#f6c7c2] transition disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <img 
-                    src="/images/facebook-icon.png" 
-                    alt="Facebook" 
-                    className="h-6 w-6 object-contain"
-                  />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSocialSignIn('GitHub', signInWithGithub)}
-                  disabled={loading}
-                  className="h-12 rounded-2xl bg-[#f9ddda] flex items-center justify-center hover:bg-[#f6c7c2] transition disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <img 
-                    src="/images/github-icon.png" 
-                    alt="GitHub" 
                     className="h-6 w-6 object-contain"
                   />
                 </button>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, X } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 
 const Login = () => {
@@ -10,7 +11,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const { login, signInWithGoogle, signInWithFacebook, signInWithGithub, resetPassword } = useAuth();
+  const { login, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
   
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -70,48 +71,12 @@ const Login = () => {
     }
   };
 
-  const handleFacebookSignIn = async () => {
-    try {
-      setLoading(true);
-      await signInWithFacebook();
-      toast.success('Signed in with Facebook!');
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Facebook sign in error:', error);
-      if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign in cancelled');
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        toast.error('An account already exists with this email. Please use email/password login.');
-      } else {
-        toast.error(error.message || 'Failed to sign in with Facebook');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGithubSignIn = async () => {
-    try {
-      setLoading(true);
-      await signInWithGithub();
-      toast.success('Signed in with GitHub!');
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('GitHub sign in error:', error);
-      if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign in cancelled');
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        toast.error('An account already exists with this email. Please use email/password login.');
-      } else {
-        toast.error(error.message || 'Failed to sign in with GitHub');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#241f1f] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Helmet>
+        <title>Login — XCITeS SOPS</title>
+        <meta name="description" content="Sign in to the XCITeS Student Organization Profiling System." />
+      </Helmet>
       <div className="w-full max-w-5xl bg-white rounded-[36px] shadow-2xl overflow-hidden flex flex-col lg:flex-row">
         {/* Intro panel */}
         <div className="relative lg:w-1/2 bg-gradient-to-br from-[#f04b4b] via-[#f36e6e] to-[#f7b1ab] text-white p-10 lg:p-12 flex flex-col justify-center rounded-tr-[180px] rounded-br-[180px] overflow-hidden">
@@ -217,40 +182,16 @@ const Login = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="flex justify-center">
                 <button
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={loading}
-                  className="h-12 rounded-2xl bg-[#f9ddda] flex items-center justify-center hover:bg-[#f6c7c2] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="h-12 w-full md:w-1/2 rounded-2xl bg-[#f9ddda] flex items-center justify-center hover:bg-[#f6c7c2] transition disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <img 
                     src="/images/google-icon.png" 
                     alt="Google" 
-                    className="h-6 w-6 object-contain"
-                  />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFacebookSignIn}
-                  disabled={loading}
-                  className="h-12 rounded-2xl bg-[#f9ddda] flex items-center justify-center hover:bg-[#f6c7c2] transition disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <img 
-                    src="/images/facebook-icon.png" 
-                    alt="Facebook" 
-                    className="h-6 w-6 object-contain"
-                  />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGithubSignIn}
-                  disabled={loading}
-                  className="h-12 rounded-2xl bg-[#f9ddda] flex items-center justify-center hover:bg-[#f6c7c2] transition disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <img 
-                    src="/images/github-icon.png" 
-                    alt="GitHub" 
                     className="h-6 w-6 object-contain"
                   />
                 </button>

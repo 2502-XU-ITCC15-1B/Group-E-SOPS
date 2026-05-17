@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import { Helmet } from 'react-helmet-async';
 import { useForm } from 'react-hook-form';
 import { 
   User, 
@@ -37,13 +38,19 @@ const MemberProfile = () => {
   });
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (isDarkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [isDarkMode]);
+    // This effect syncs the component's dark mode UI state with the global theme
+    // which is managed by App.js and stored in localStorage.
+    if (typeof window === 'undefined') return;
+    const handleThemeChange = () => {
+      setIsDarkMode(localStorage.getItem('theme') === 'dark');
+    };
+    window.addEventListener('theme-change', handleThemeChange);
+    window.addEventListener('storage', handleThemeChange); // For changes in other tabs
+    return () => {
+      window.removeEventListener('theme-change', handleThemeChange);
+      window.removeEventListener('storage', handleThemeChange);
+    };
+  }, []);
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
@@ -89,12 +96,16 @@ const MemberProfile = () => {
   const onSubmit = async (data) => {
     try {
       setSaving(true);
-      await updateDoc(doc(db, 'users', currentUser.uid), {
+      const normalizedData = {
         ...data,
+        phone: data.phone ? data.phone.replace(/^(0|(\+63)|63)/, '') : ''
+      };
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        ...normalizedData,
         updatedAt: new Date().toISOString()
       });
       
-      setProfile({ ...profile, ...data });
+      setProfile({ ...profile, ...normalizedData });
       await logEvent({ type: 'profile_update', userId: currentUser.uid, email: currentUser.email });
       setIsEditing(false);
       toast.success('Profile updated successfully!');
@@ -162,6 +173,10 @@ const MemberProfile = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Helmet>
+        <title>Profile — XCITeS SOPS</title>
+        <meta name="description" content="Manage your XCITeS member profile." />
+      </Helmet>
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -283,14 +298,32 @@ const MemberProfile = () => {
                   Phone Number
                 </label>
                 {isEditing ? (
-                  <input
-                    {...register('phone')}
-                    type="tel"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="+1 (555) 123-4567"
-                  />
+                  <>
+                    <div className="flex">
+                      <span className="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 rounded-l-md bg-gray-50 text-gray-500 text-sm">
+                        +63
+                      </span>
+                      <input
+                        {...register('phone', {
+                          pattern: {
+                            value: /^9\d{9}$/,
+                            message: 'Enter a valid Philippine mobile number (e.g. 9171234567)'
+                          }
+                        })}
+                        type="tel"
+                        maxLength={10}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="9171234567"
+                      />
+                    </div>
+                    {errors.phone && (
+                      <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+                    )}
+                  </>
                 ) : (
-                  <p className="text-gray-900">{profile?.phone || 'Not provided'}</p>
+                  <p className="text-gray-900">
+                    {profile?.phone ? `+63 ${profile.phone}` : 'Not provided'}
+                  </p>
                 )}
               </div>
 
