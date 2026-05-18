@@ -57,24 +57,6 @@ const ExecutivePanel = () => {
     assignedTo: ''
   });
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('theme') === 'dark';
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const handleThemeChange = () => {
-      setIsDarkMode(localStorage.getItem('theme') === 'dark');
-    };
-    window.addEventListener('theme-change', handleThemeChange);
-    window.addEventListener('storage', handleThemeChange);
-    return () => {
-      window.removeEventListener('theme-change', handleThemeChange);
-      window.removeEventListener('storage', handleThemeChange);
-    };
-  }, []);
-
   const departments = [
     {
       name: 'Media Relations & Creatives',
@@ -402,20 +384,20 @@ console.log('All notifications created successfully');
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'text-green-600 bg-green-100';
-      case 'in-progress': return 'text-blue-600 bg-blue-100';
-      case 'planning': return 'text-yellow-600 bg-yellow-100';
-      case 'on-hold': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'completed': return 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/50';
+      case 'in-progress': return 'text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/50';
+      case 'planning': return 'text-yellow-600 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/50';
+      case 'on-hold': return 'text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900/50';
+      default: return 'text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-700';
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'text-red-600 bg-red-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'low': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'high': return 'text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900/50';
+      case 'medium': return 'text-yellow-600 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/50';
+      case 'low': return 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/50';
+      default: return 'text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-700';
     }
   };
 
@@ -467,7 +449,7 @@ console.log('Active users count:', activeUsersCount);
       </Helmet>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Executive Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Executive Dashboard</h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
           Monitor team performance and manage organizational activities
         </p>
@@ -499,7 +481,7 @@ console.log('Active users count:', activeUsersCount);
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <button
               onClick={() => setShowMembersList(true)}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer text-left"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-300 cursor-pointer text-left"
             >
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -507,7 +489,7 @@ console.log('Active users count:', activeUsersCount);
                 </div>
                 <div className="ml-4 flex-1">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Member Total</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{activeUsersCount}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{activeUsersCount}</p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
@@ -520,17 +502,17 @@ console.log('Active users count:', activeUsersCount);
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Projects</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{activeProjectsCount}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{activeProjectsCount}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Recent Projects */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-300">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recent Projects</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Recent Projects</h3>
                 {(userRole === 'executive' || userRole === 'admin') && (
                   <button 
                     onClick={() => {
@@ -580,8 +562,8 @@ console.log('Active users count:', activeUsersCount);
                   {projects.slice(0, 5).map((project) => (
                     <tr key={project.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">{project.name}</div>
+                        <div className="text-gray-900 dark:text-gray-100">
+                          <div className="text-sm font-medium">{project.name}</div>
                           {project.assignedTo && (
                             <div className="text-sm text-gray-500 dark:text-gray-400">Assigned to {project.assignedTo}</div>
                           )}
@@ -635,19 +617,19 @@ console.log('Active users count:', activeUsersCount);
 
       {/* Departments Tab */}
       {selectedView === 'departments' && (
-        <div className="space-y-6">
+        <div className="space-y-6 transition-colors duration-300">
           {organizedDepartments.map((dept, index) => (
             <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center">
                   <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">{dept.name}</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{dept.name}</h3>
                 </div>
               </div>
               <div className="p-6">
                 <div className="mb-4">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department Head:</p>
-                  <p className="text-gray-900 dark:text-white">
+                  <p className="text-gray-900 dark:text-gray-100">
                     {dept.head 
                       ? `${dept.head.firstName} ${dept.head.lastName} (${dept.head.email})`
                       : 'Not assigned'}
@@ -667,7 +649,7 @@ console.log('Active users count:', activeUsersCount);
                             </span>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {member.firstName} {member.lastName}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{member.email}</p>
@@ -692,10 +674,10 @@ console.log('Active users count:', activeUsersCount);
 
       {/* Projects Tab */}
       {selectedView === 'projects' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-300">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">All Projects</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">All Projects</h3>
               {(userRole === 'executive' || userRole === 'admin') && (
                 <button 
                   onClick={() => {
@@ -723,7 +705,7 @@ console.log('Active users count:', activeUsersCount);
               {projects.map((project) => (
                 <div key={project.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-white">{project.name}</h4>
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{project.name}</h4>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
                       {project.priority || 'medium'}
                     </span>
@@ -742,13 +724,13 @@ console.log('Active users count:', activeUsersCount);
                     {project.assignedTo && (
                       <div>
                         <span className="text-sm text-gray-500 dark:text-gray-400">Assigned to: </span>
-                        <span className="text-sm text-gray-900 dark:text-white">{project.assignedTo}</span>
+                        <span className="text-sm text-gray-900 dark:text-gray-100">{project.assignedTo}</span>
                       </div>
                     )}
                     {project.dueDate && (
                       <div>
                         <span className="text-sm text-gray-500 dark:text-gray-400">Due: </span>
-                        <span className="text-sm text-gray-900 dark:text-white">{new Date(project.dueDate).toLocaleDateString()}</span>
+                        <span className="text-sm text-gray-900 dark:text-gray-100">{new Date(project.dueDate).toLocaleDateString()}</span>
                       </div>
                     )}
                     {(userRole === 'executive' || userRole === 'admin') && (
@@ -785,10 +767,10 @@ console.log('Active users count:', activeUsersCount);
 
       {/* Announcements Tab */}
       {selectedView === 'announcements' && (
-        <div className="space-y-6">
+        <div className="space-y-6 transition-colors duration-300">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Announcements</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Announcements</h3>
               <button
                 onClick={() => setShowAnnouncementModal(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
@@ -805,7 +787,7 @@ console.log('Active users count:', activeUsersCount);
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2">
           <Megaphone className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{announcement.title}</h4>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{announcement.title}</h4>
         </div>
         <span className="text-xs text-gray-500 dark:text-gray-400">
           {announcement.createdAt && announcement.createdAt.toDate 
@@ -858,7 +840,7 @@ console.log('Active users count:', activeUsersCount);
           <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">All Members ({filteredMembers.length})</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">All Members ({filteredMembers.length})</h3>
                 <button
                   onClick={() => {
                     setShowMembersList(false);
@@ -918,7 +900,7 @@ console.log('Active users count:', activeUsersCount);
                         </span>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {user.firstName} {user.lastName}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
@@ -956,7 +938,7 @@ console.log('Active users count:', activeUsersCount);
           <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                   <Megaphone className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
                   Create New Announcement
                 </h3>
@@ -1031,7 +1013,7 @@ console.log('Active users count:', activeUsersCount);
           <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   {editingProject ? 'Edit Project' : 'Create New Project'}
                 </h3>
                 <button

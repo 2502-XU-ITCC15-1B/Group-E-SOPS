@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { Helmet } from 'react-helmet-async';
 import { useForm } from 'react-hook-form';
@@ -34,26 +34,22 @@ const MemberProfile = () => {
   const [changingPassword, setChangingPassword] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('theme') === 'dark';
+    return document.documentElement.classList.contains('dark');
   });
 
+  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+
   useEffect(() => {
-    // This effect syncs the component's dark mode UI state with the global theme
-    // which is managed by App.js and stored in localStorage.
-    if (typeof window === 'undefined') return;
     const handleThemeChange = () => {
-      setIsDarkMode(localStorage.getItem('theme') === 'dark');
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
     };
     window.addEventListener('theme-change', handleThemeChange);
-    window.addEventListener('storage', handleThemeChange); // For changes in other tabs
+    window.addEventListener('storage', handleThemeChange);
     return () => {
       window.removeEventListener('theme-change', handleThemeChange);
       window.removeEventListener('storage', handleThemeChange);
     };
   }, []);
-  
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
-
   const handleChangePassword = async () => {
     try {
       setChangingPassword(true);
@@ -102,7 +98,7 @@ const MemberProfile = () => {
       };
       await updateDoc(doc(db, 'users', currentUser.uid), {
         ...normalizedData,
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
       
       setProfile({ ...profile, ...normalizedData });
@@ -122,8 +118,8 @@ const MemberProfile = () => {
       setSaving(true);
       await updateDoc(doc(db, 'users', currentUser.uid), {
         isActive: false,
-        deactivatedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        deactivatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       
       setProfile({ ...profile, isActive: false });
@@ -156,10 +152,10 @@ const MemberProfile = () => {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'admin': return 'text-red-600 bg-red-100';
-      case 'executive': return 'text-yellow-600 bg-yellow-100';
-      case 'member': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'admin': return 'text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900/50';
+      case 'executive': return 'text-yellow-600 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/50';
+      case 'member': return 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/50';
+      default: return 'text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-700';
     }
   };
 
@@ -181,8 +177,8 @@ const MemberProfile = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-            <p className="mt-2 text-gray-600">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Profile</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
               Manage your personal information and account settings
             </p>
           </div>
@@ -194,14 +190,14 @@ const MemberProfile = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  className="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-700 rounded-md shadow-sm text-sm font-medium text-red-700 dark:text-red-300 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete/Deactivate
@@ -214,7 +210,7 @@ const MemberProfile = () => {
                     setIsEditing(false);
                     reset(profile);
                   }}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -223,7 +219,7 @@ const MemberProfile = () => {
                   form="profile-form"
                   type="submit"
                   disabled={saving}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? 'Saving...' : 'Save Changes'}
@@ -236,26 +232,26 @@ const MemberProfile = () => {
 
       {/* Profile Form */}
       <form id="profile-form" onSubmit={handleSubmit(onSubmit)}>
-        <div className="bg-white shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg transition-colors duration-300">
           {/* Basic Information */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Basic Information</h3>
           </div>
           
           <div className="px-6 py-4 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   First Name
                 </label>
                 {isEditing ? (
                   <input
                     {...register('firstName', { required: 'First name is required' })}
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   />
                 ) : (
-                  <p className="text-gray-900">{profile?.firstName || 'Not provided'}</p>
+                  <p className="text-gray-900 dark:text-gray-100">{profile?.firstName || 'Not provided'}</p>
                 )}
                 {errors.firstName && (
                   <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>
@@ -263,17 +259,17 @@ const MemberProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Last Name
                 </label>
                 {isEditing ? (
                   <input
                     {...register('lastName', { required: 'Last name is required' })}
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   />
                 ) : (
-                  <p className="text-gray-900">{profile?.lastName || 'Not provided'}</p>
+                  <p className="text-gray-900 dark:text-gray-100">{profile?.lastName || 'Not provided'}</p>
                 )}
                 {errors.lastName && (
                   <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
@@ -282,25 +278,25 @@ const MemberProfile = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email Address
               </label>
               <div className="flex items-center">
                 <Mail className="h-5 w-5 text-gray-400 mr-2" />
-                <p className="text-gray-900">{currentUser.email}</p>
-                <span className="ml-2 text-sm text-gray-500">(Cannot be changed)</span>
+                <p className="text-gray-900 dark:text-gray-100">{currentUser.email}</p>
+                <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">(Cannot be changed)</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Phone Number
                 </label>
                 {isEditing ? (
                   <>
                     <div className="flex">
-                      <span className="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 rounded-l-md bg-gray-50 text-gray-500 text-sm">
+                      <span className="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-md bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-300 text-sm">
                         +63
                       </span>
                       <input
@@ -312,7 +308,7 @@ const MemberProfile = () => {
                         })}
                         type="tel"
                         maxLength={10}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                         placeholder="9171234567"
                       />
                     </div>
@@ -321,24 +317,24 @@ const MemberProfile = () => {
                     )}
                   </>
                 ) : (
-                  <p className="text-gray-900">
+                  <p className="text-gray-900 dark:text-gray-100">
                     {profile?.phone ? `+63 ${profile.phone}` : 'Not provided'}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Birthday
                 </label>
                 {isEditing ? (
                   <input
                     {...register('birthday')}
                     type="date"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   />
                 ) : (
-                  <p className="text-gray-900">
+                  <p className="text-gray-900 dark:text-gray-100">
                     {profile?.birthday ? new Date(profile.birthday).toLocaleDateString() : 'Not provided'}
                   </p>
                 )}
@@ -347,29 +343,38 @@ const MemberProfile = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Position
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Organizational Position
                 </label>
                 {isEditing ? (
-                  <input
-                    {...register('position')}
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., President, Member, Staff"
-                  />
+                  <select
+                    {...register('organizationPosition')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">Select Position</option>
+                    <option value="Member">Member</option>
+                    <option value="Volunteer">Volunteer</option>
+                    <option value="Committee Member">Committee Member</option>
+                    <option value="Events Staff">Events Staff</option>
+                    <option value="Auditor">Auditor</option>
+                    <option value="Secretary">Secretary</option>
+                    <option value="Treasurer">Treasurer</option>
+                    <option value="Vice President">Vice President</option>
+                    <option value="President">President</option>
+                  </select>
                 ) : (
-                  <p className="text-gray-900">{profile?.position || 'Not provided'}</p>
+                  <p className="text-gray-900 dark:text-gray-100">{profile?.organizationPosition || 'Not provided'}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Department
                 </label>
                 {isEditing ? (
                   <select
                     {...register('department')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   >
                     <option value="">Select Department</option>
                     <option value="Media Relations & Creatives">Media Relations & Creatives</option>
@@ -379,53 +384,53 @@ const MemberProfile = () => {
                     <option value="Recreation & Sports">Recreation & Sports</option>
                   </select>
                 ) : (
-                  <p className="text-gray-900">{profile?.department || 'Not provided'}</p>
+                  <p className="text-gray-900 dark:text-gray-100">{profile?.department || 'Not provided'}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Location
               </label>
               {isEditing ? (
                 <input
                   {...register('location')}
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="City, State/Province"
                 />
               ) : (
-                <p className="text-gray-900">{profile?.location || 'Not provided'}</p>
+                <p className="text-gray-900 dark:text-gray-100">{profile?.location || 'Not provided'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Bio
               </label>
               {isEditing ? (
                 <textarea
                   {...register('bio')}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Tell us about yourself..."
                 />
               ) : (
-                <p className="text-gray-900">{profile?.bio || 'No bio provided'}</p>
+                <p className="text-gray-900 dark:text-gray-100">{profile?.bio || 'No bio provided'}</p>
               )}
             </div>
           </div>
 
           {/* Account Information */}
-          <div className="px-6 py-4 border-t border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Account Information</h3>
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Account Information</h3>
           </div>
           
           <div className="px-6 py-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Role
                 </label>
                 <div className="flex items-center">
@@ -438,12 +443,12 @@ const MemberProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Member Since
                 </label>
                 <div className="flex items-center">
                   <Calendar className="h-5 w-5 text-gray-400 mr-2" />
-                  <p className="text-gray-900">
+                  <p className="text-gray-900 dark:text-gray-100">
                     {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Unknown'}
                   </p>
                 </div>
@@ -452,20 +457,22 @@ const MemberProfile = () => {
 
             {profile?.lastLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Last Login
                 </label>
-                <p className="text-gray-900">
-                  {new Date(profile.lastLogin).toLocaleString()}
+                <p className="text-gray-900 dark:text-gray-100">
+                  {profile.lastLogin?.toDate
+                    ? profile.lastLogin.toDate().toLocaleString()
+                    : 'Never'}
                 </p>
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={() => setShowPasswordChange(true)}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 Change Password
               </button>
@@ -477,20 +484,20 @@ const MemberProfile = () => {
       {/* Password Change Modal */}
       {showPasswordChange && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">Change Password</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Change Password</h3>
                 <button
                   onClick={() => setShowPasswordChange(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-white"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   We'll send a password reset link to your email address: <strong>{currentUser.email}</strong>
                 </p>
               </div>
@@ -498,14 +505,14 @@ const MemberProfile = () => {
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   onClick={() => setShowPasswordChange(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleChangePassword}
                   disabled={changingPassword}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
                   {changingPassword ? 'Sending...' : 'Send Reset Link'}
                 </button>
@@ -518,17 +525,17 @@ const MemberProfile = () => {
       {/* Delete/Deactivate Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
               <div className="flex items-center mb-4">
-                <div className="flex-shrink-0 mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <div className="flex-shrink-0 mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/50">
                   <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 text-center mb-2">
                 Delete or Deactivate Profile
               </h3>
-              <p className="text-sm text-gray-500 text-center mb-6">
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
                 Choose an option below. Deactivating will disable your account temporarily, 
                 while deleting will permanently remove your profile.
               </p>
@@ -537,7 +544,7 @@ const MemberProfile = () => {
                 <button
                   onClick={handleDeactivate}
                   disabled={saving}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-yellow-300 rounded-md shadow-sm text-sm font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-yellow-300 dark:border-yellow-700 rounded-md shadow-sm text-sm font-medium text-yellow-700 dark:text-yellow-200 bg-yellow-50 dark:bg-yellow-900/50 hover:bg-yellow-100 dark:hover:bg-yellow-800/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
                 >
                   <AlertTriangle className="h-4 w-4 mr-2" />
                   {saving ? 'Deactivating...' : 'Deactivate Profile'}
@@ -546,7 +553,7 @@ const MemberProfile = () => {
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-800"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   {deleting ? 'Deleting...' : 'Delete Profile Permanently'}
@@ -554,7 +561,7 @@ const MemberProfile = () => {
                 
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>

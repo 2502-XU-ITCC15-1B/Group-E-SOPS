@@ -15,16 +15,6 @@
       ]
     },
     {
-      "collectionGroup": "activities",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "timestamp",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "projects",
       "queryScope": "COLLECTION",
       "fields": [
@@ -49,6 +39,28 @@
         {
           "fieldPath": "status",
           "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "passwordResetRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "email", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
         }
       ]
     }
