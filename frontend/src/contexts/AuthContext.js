@@ -24,6 +24,14 @@ export function AuthProvider({ children }) {
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const XU_DOMAIN = '@my.xu.edu.ph';
+
+  const validateXUEmail = (email) => {
+    if (!email?.toLowerCase().endsWith(XU_DOMAIN)) {
+      throw new Error(`Only ${XU_DOMAIN} email addresses are allowed. Please use your Xavier University student account.`);
+    }
+  };
+
   // helper to log events to Firestore systemLogs
   const logEvent = useCallback(async (event) => {
     try {
@@ -37,6 +45,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signup = useCallback(async (email, password, firstName, lastName, role = 'member') => {
+    validateXUEmail(email);
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -69,6 +78,7 @@ export function AuthProvider({ children }) {
   }, [logEvent]);
 
   const login = useCallback(async (email, password) => {
+    validateXUEmail(email);
     const result = await signInWithEmailAndPassword(auth, email, password);
     try {
       // Force a refresh of the ID token to get the latest custom claims.
@@ -138,10 +148,17 @@ export function AuthProvider({ children }) {
   const signInWithGoogle = useCallback(async () => {
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ hd: 'my.xu.edu.ph' });
+
       const result = await signInWithPopup(auth, provider);
+
+      if (!result.user.email?.toLowerCase().endsWith('@my.xu.edu.ph')) {
+        await signOut(auth);
+        throw new Error('Only @my.xu.edu.ph email addresses are allowed. Please use your Xavier University student account.');
+      }
+
       await ensureUserDocument(result.user);
-      
-      // Log login
+
       await logEvent({
         type: 'user_login',
         userId: result.user.uid,
@@ -149,10 +166,9 @@ export function AuthProvider({ children }) {
         method: 'google',
         action: 'User logged in with Google'
       });
-      
+
       return result;
     } catch (error) {
-      console.error('Google sign in error:', error);
       throw error;
     }
   }, [ensureUserDocument, logEvent]);
@@ -215,13 +231,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const requestPasswordAssistance = useCallback(async ({ email, reason }) => {
-    // Find user UID to associate with the request
-    const usersQuery = query(collection(db, 'users'), where('email', '==', email), limit(1));
-    const userSnapshot = await getDocs(usersQuery);
-    const userDoc = userSnapshot.docs[0];
-    const uid = userDoc ? userDoc.id : null;
-
-    // Check for existing pending request to prevent spam
+    // Duplicate request check
     const existingQuery = query(
       collection(db, 'passwordResetRequests'),
       where('email', '==', email),
@@ -229,11 +239,11 @@ export function AuthProvider({ children }) {
     );
     const existing = await getDocs(existingQuery);
     if (!existing.empty) {
-      throw new Error('You already have a pending assistance request. Please wait for an admin to respond.');
+      throw new Error('You already have a pending request. Please wait for an admin to respond.');
     }
 
     await addDoc(collection(db, 'passwordResetRequests'), {
-      uid: uid,
+      uid: null,
       email,
       reason: reason || '',
       status: 'pending',
@@ -243,11 +253,14 @@ export function AuthProvider({ children }) {
       resolvedBy: null
     });
 
-    await logEvent({
-      type: 'password_assistance_requested',
-      userId: uid,
-      email
-    });
+    // logEvent may fail when unauthenticated — swallow silently
+    try {
+      await logEvent({
+        type: 'password_assistance_requested',
+        userId: null,
+        email
+      });
+    } catch (_) {}
   }, [logEvent]);
 
   const resolvePasswordRequest = useCallback(async ({ requestId, action, adminNote, email }) => {

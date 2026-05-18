@@ -94,16 +94,32 @@ service cloud.firestore {
       allow update, delete: if isExecutiveOrAdmin();
     }
 
+    // Directory collection - all authenticated users can read, only executives and admins can write
+    match /directory/{directoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isExecutiveOrAdmin();
+    }
+
     // Password Reset Requests - users can create, admins can manage
     match /passwordResetRequests/{requestId} {
-      // Allow anyone to create a request (for unauthenticated users on login page)
-      // with validation.
+      // Anyone (including unauthenticated) can create a pending request
       allow create: if request.resource.data.status == 'pending'
                       && request.resource.data.email is string
                       && request.resource.data.reason is string;
-      // Only admins can read or resolve requests.
-      allow read, update: if isAdmin();
-      allow delete: if false; // Requests should be resolved, not deleted.
+      // Anyone can list to check for duplicate pending requests by email
+      allow list: if true;
+      // Only admins (via custom claim) can read individual docs or update
+      allow get, update: if request.auth != null
+                       && request.auth.token.role == 'admin';
+      allow delete: if false;
+    }
+
+    // System Logs - allow unauthenticated creates for password assistance events
+    match /systemLogs/{logId} {
+      allow create: if true;
+      allow read: if request.auth != null
+                && request.auth.token.role == 'admin';
+      allow update, delete: if false;
     }
     // Default rule - deny all other access
     match /{document=**} {
