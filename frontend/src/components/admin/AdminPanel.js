@@ -13,7 +13,6 @@ import { db } from '../../firebase/config';
 import {
   Users,
   Shield,
-  Edit,
   Trash2,
   Eye,
   Search,
@@ -53,7 +52,6 @@ const AdminPanel = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
   const [selectedTab, setSelectedTab] = useState('users');
 
   useEffect(() => {
@@ -102,12 +100,15 @@ const AdminPanel = () => {
   const fetchPasswordRequests = async () => {
     try {
       setRequestsLoading(true);
-      const q = query(
-        collection(db, 'passwordResetRequests'),
-        orderBy('createdAt', 'desc')
-      );
-      const snap = await getDocs(q);
-      setPasswordRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const snap = await getDocs(collection(db, 'passwordResetRequests'));
+      const requests = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const ta = a.createdAt?.toMillis?.() ?? 0;
+          const tb = b.createdAt?.toMillis?.() ?? 0;
+          return tb - ta;
+        });
+      setPasswordRequests(requests);
     } catch (error) {
       console.error('Error fetching password requests:', error);
       toast.error('Failed to fetch password requests');
@@ -443,12 +444,6 @@ const AdminPanel = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </button>
-                          <button
-                            onClick={() => { setEditingUser(user); setSelectedUser(user); setShowUserModal(true); }}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
                           {user.id !== currentUser.uid && (
                             <button
                               onClick={() => handleDeleteUser(user.id)}
@@ -480,106 +475,50 @@ const AdminPanel = () => {
                 <div className="mt-3">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {editingUser ? 'Edit User' : 'User Details'}
+                      User Details
                     </h3>
                     <button
-                      onClick={() => { setShowUserModal(false); setEditingUser(null); setSelectedUser(null); }}
+                      onClick={() => { setShowUserModal(false); setSelectedUser(null); }}
                       className="text-gray-400 hover:text-gray-600"
                     >
                       ×
                     </button>
                   </div>
-                  {editingUser ? (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                        <p className="text-gray-900 dark:text-white">{selectedUser.firstName} {selectedUser.lastName}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                        <p className="text-gray-900 dark:text-white">{selectedUser.email}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
-                        <select
-                          value={selectedUser.department || ''}
-                          onChange={async (e) => {
-                            try {
-                              await updateDoc(doc(db, 'users', selectedUser.id), {
-                                department: e.target.value,
-                                updatedAt: new Date().toISOString()
-                              });
-                              setSelectedUser({ ...selectedUser, department: e.target.value });
-                              setUsers(users.map(u => u.id === selectedUser.id ? { ...u, department: e.target.value } : u));
-                              await logEvent({
-                                type: 'profile_update',
-                                userId: selectedUser.id,
-                                email: selectedUser.email,
-                                action: `Department updated to ${e.target.value}`,
-                                performedBy: currentUser.uid
-                              });
-                              fetchSystemLogs();
-                              toast.success('Department updated successfully');
-                            } catch (error) {
-                              toast.error('Failed to update department');
-                            }
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select Department</option>
-                          <option value="Media Relations & Creatives">Media Relations & Creatives</option>
-                          <option value="Events & Logistics">Events & Logistics</option>
-                          <option value="Student Services & Academics">Student Services & Academics</option>
-                          <option value="Social Engagement & External Affairs">Social Engagement & External Affairs</option>
-                          <option value="Recreation & Sports">Recreation & Sports</option>
-                        </select>
-                      </div>
-                      <div className="mt-6 flex justify-end">
-                        <button
-                          onClick={() => { setShowUserModal(false); setEditingUser(null); setSelectedUser(null); }}
-                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                        >
-                          Close
-                        </button>
-                      </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                      <p className="text-gray-900 dark:text-white">{selectedUser.firstName} {selectedUser.lastName}</p>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                        <p className="text-gray-900 dark:text-white">{selectedUser.firstName} {selectedUser.lastName}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                        <p className="text-gray-900 dark:text-white">{selectedUser.email}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedUser.role)}`}>
-                          {getRoleIcon(selectedUser.role)}
-                          <span className="ml-1 capitalize">{selectedUser.role}</span>
-                        </span>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
-                        <p className="text-gray-900 dark:text-white">{selectedUser.department || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Member Since</label>
-                        <p className="text-gray-900 dark:text-white">
-                          {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'Unknown'}
-                        </p>
-                      </div>
-                      <div className="mt-6 flex justify-end">
-                        <button
-                          onClick={() => { setShowUserModal(false); setSelectedUser(null); }}
-                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                        >
-                          Close
-                        </button>
-                      </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                      <p className="text-gray-900 dark:text-white">{selectedUser.email}</p>
                     </div>
-                  )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedUser.role)}`}>
+                        {getRoleIcon(selectedUser.role)}
+                        <span className="ml-1 capitalize">{selectedUser.role}</span>
+                      </span>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
+                      <p className="text-gray-900 dark:text-white">{selectedUser.department || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Member Since</label>
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'Unknown'}
+                      </p>
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                      <button
+                        onClick={() => { setShowUserModal(false); setSelectedUser(null); }}
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
