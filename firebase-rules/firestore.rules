@@ -93,6 +93,18 @@ service cloud.firestore {
       allow create: if isExecutiveOrAdmin();
       allow update, delete: if isExecutiveOrAdmin();
     }
+
+    // Password Reset Requests - users can create, admins can manage
+    match /passwordResetRequests/{requestId} {
+      // Allow anyone to create a request (for unauthenticated users on login page)
+      // with validation.
+      allow create: if request.resource.data.status == 'pending'
+                      && request.resource.data.email is string
+                      && request.resource.data.reason is string;
+      // Only admins can read or resolve requests.
+      allow read, update: if isAdmin();
+      allow delete: if false; // Requests should be resolved, not deleted.
+    }
     // Default rule - deny all other access
     match /{document=**} {
       allow read, write: if false;

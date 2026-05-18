@@ -188,19 +188,22 @@ const Directory = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <BookOpen className="h-8 w-8 text-blue-600" />
           Member directory
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
           Officers and members by department. Import from an Excel or CSV export when needed.
         </p>
+
       </div>
 
       {canManage && (
-        <div className="bg-white shadow rounded-lg border border-gray-100 mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-100 dark:border-gray-700 mb-8">
+
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+
               <Upload className="h-5 w-5 text-blue-600" />
               Import spreadsheet
             </h2>
@@ -250,43 +253,45 @@ const Directory = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <Users className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Entries</p>
-              <p className="text-2xl font-semibold text-gray-900">{entries.length}</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{entries.length}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <Building2 className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Departments</p>
-              <p className="text-2xl font-semibold text-gray-900">{departments.length}</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{departments.length}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
               <Filter className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Showing</p>
-              <p className="text-2xl font-semibold text-gray-900">{filtered.length}</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{filtered.length}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white shadow rounded-lg border border-gray-100 overflow-hidden mb-6">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/80">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
+
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/80">
+
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -329,7 +334,8 @@ const Directory = () => {
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-900">
+
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Name
@@ -348,7 +354,8 @@ const Directory = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
@@ -360,17 +367,17 @@ const Directory = () => {
               )}
               {filtered.map((row) => (
                 <tr key={row.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                     <div>{row.fullName}</div>
                     {(row.nickname || row.preferredPronouns) && (
-                      <div className="text-xs font-normal text-gray-500 mt-0.5">
+                      <div className="text-xs font-normal text-gray-500 dark:text-gray-400 mt-0.5">
                         {[row.nickname && `“${row.nickname}”`, row.preferredPronouns]
                           .filter(Boolean)
                           .join(' · ')}
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                     {row.department ? (
                       <span className="inline-flex items-center gap-1">
                         <Building2 className="h-3.5 w-3.5 text-gray-400" />
@@ -380,7 +387,7 @@ const Directory = () => {
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                     {row.position ? (
                       <span className="inline-flex items-center gap-1">
                         <Briefcase className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
@@ -390,7 +397,7 @@ const Directory = () => {
                       '—'
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex flex-col gap-1">
                       {row.email && (
                         <a
@@ -410,7 +417,7 @@ const Directory = () => {
                       {!row.email && !row.phone && '—'}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-xs text-gray-600 max-w-xs">
+                  <td className="px-6 py-4 text-xs text-gray-600 dark:text-gray-400 max-w-xs">
                     <div className="space-y-1">
                       {[row.birthdate, row.sex].filter(Boolean).join(' · ') || null}
                       {row.schedules && (

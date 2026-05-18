@@ -250,10 +250,9 @@ const Dashboard = () => {
   const [message, setMessage] = useState('');
   const [sentStatus, setSentStatus] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('theme') === 'dark';
+    return document.documentElement.classList.contains('dark');
   });
 
   const [conversations, setConversations] = useState(() => {
@@ -353,7 +352,7 @@ const Dashboard = () => {
     // which is managed by App.js and stored in localStorage.
     if (typeof window === 'undefined') return;
     const handleThemeChange = () => {
-      setIsDarkMode(localStorage.getItem('theme') === 'dark');
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
     };
     window.addEventListener('theme-change', handleThemeChange);
     window.addEventListener('storage', handleThemeChange); // For changes in other tabs
@@ -515,26 +514,11 @@ const Dashboard = () => {
         <title>Dashboard — XCITeS SOPS</title>
         <meta name="description" content="Your XCITeS member dashboard." />
       </Helmet>
-      <style>{`
-          html.dark .text-gray-600 { color: #cbd5e1 !important; }
-          html.dark .text-gray-500 { color: #9aa6b2 !important; }
-          html.dark .text-gray-400 { color: #8aa0b0 !important; }
-          html.dark .text-gray-900 { color: #e6eef8 !important; }
-          html.dark .text-gray-800 { color: #e6eef8 !important; }
-
-          html.dark .bg-white { background-color: #0f1724 !important; }
-          html.dark .bg-gray-50 { background-color: #071024 !important; }
-          html.dark .border-gray-100 { border-color: #1f2937 !important; }
-          html.dark .bg-red-50 { background-color: rgba(240, 75, 75, 0.06) !important; }
-
-          .settings-dropdown .icon { width: 1.25rem; display: inline-flex; align-items: center; justify-content: center; }
-        `}</style>
-
-      <div className={`min-h-screen w-full ${appBgClass}`}>
+      <div className="min-h-screen w-full bg-[#f7f7f7] text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
         <div className="w-full h-screen overflow-auto">
           <div className="flex flex-col lg:flex-row h-full">
             <aside
-              className={`w-full lg:w-72 xl:w-80 px-6 py-8 flex flex-col space-y-8 h-full overflow-y-auto ${sidebarBgClass}`}
+              className="w-full lg:w-72 xl:w-80 px-6 py-8 flex flex-col space-y-8 h-full overflow-y-auto bg-white border-gray-100 dark:bg-gray-950 dark:border-gray-800 transition-colors duration-300"
             >
               <div className="space-y-6">
                 <div className="flex items-center space-x-3">
@@ -546,8 +530,8 @@ const Dashboard = () => {
                     />
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-gray-400">Student</p>
-                    <p className="text-lg font-semibold">Organization Profiling System</p>
+                    <p className="text-xs uppercase tracking-[0.4em] text-gray-400 dark:text-gray-500">Student</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">Organization Profiling System</p>
                   </div>
                 </div>
               </div>
@@ -561,9 +545,9 @@ const Dashboard = () => {
                       key={item.id}
                       onClick={() => setSelectedSection(item.id)}
                       className={`w-full flex items-center space-x-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition
-                          ${active ? 'bg-[#f04b4b] text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}
+                          ${active ? 'bg-[#f04b4b] text-white shadow-lg' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                     >
-                      <Icon className={`h-5 w-5 ${active ? 'text-white' : 'text-gray-400'}`} />
+                      <Icon className={`h-5 w-5 ${active ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`} />
                       <span>{item.label}</span>
                     </button>
                   );
@@ -578,7 +562,7 @@ const Dashboard = () => {
                     localStorage.setItem('theme', newTheme);
                     window.dispatchEvent(new CustomEvent('theme-change'));
                   }}
-                  className="w-full flex items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium text-gray-600 hover:bg-gray-100"
+                  className="w-full flex items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   aria-pressed={isDarkMode}
                   aria-label="Toggle dark mode"
                 >
@@ -594,20 +578,18 @@ const Dashboard = () => {
             </aside>
 
             <main
-              className={`flex-1 px-6 lg:px-10 py-10 overflow-y-auto h-full ${mainBgClass}`}
-              style={{ color: isDarkMode ? '#e6eef8' : undefined, maxHeight: 'calc(100vh - 80px)' }}
+              className="flex-1 px-6 lg:px-10 py-10 overflow-y-auto h-full bg-[#f7f7f7] dark:bg-gray-900 transition-colors duration-300"
+              style={{ maxHeight: 'calc(100vh - 80px)' }}
             >
               {selectedSection === 'home' && (
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 xl:grid-cols-[320px,1fr] gap-6">
                     <div
-                      className={`rounded-3xl p-8 flex flex-col items-center text-center space-y-6 ${
-                        isDarkMode ? 'bg-gray-800' : 'bg-white'
-                      }`}
+                      className="rounded-3xl p-8 flex flex-col items-center text-center space-y-6 bg-white dark:bg-gray-800 transition-colors duration-300"
                     >
                       <div className="relative flex flex-col items-center">
                         <div className="relative -mt-16 group">
-                          <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 shadow-lg border-4 border-white flex items-center justify-center">
+                          <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 shadow-lg border-4 border-white dark:border-gray-900 flex items-center justify-center">
                             {profileImage ? (
                               <img
                                 src={profileImage}
@@ -615,7 +597,7 @@ const Dashboard = () => {
                                 className="h-32 w-32 object-cover"
                               />
                             ) : (
-                              <span className="text-3xl font-semibold text-gray-600">
+                              <span className="text-3xl font-semibold text-gray-600 dark:text-gray-400">
                                 {getInitials(displayName)}
                               </span>
                             )}
@@ -637,22 +619,22 @@ const Dashboard = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <h2 className="text-2xl font-semibold">Hello, {displayName}!</h2>
-                        <p className="text-sm text-gray-500 uppercase tracking-[0.4em]">
+                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Hello, {displayName}!</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-[0.4em]">
                           ORGANIZATIONAL PROFILING SYSTEM
                         </p>
                       </div>
 
-                      <div className="w-full pt-6 border-t border-gray-100 space-y-4">
-                        <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="w-full pt-6 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                           <span>Role</span>
-                          <span className="inline-flex items-center space-x-2 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-500">
+                          <span className="inline-flex items-center space-x-2 rounded-full bg-red-50 dark:bg-red-500/10 px-3 py-1 text-xs font-medium text-red-500 dark:text-red-400">
                             <Award className="h-4 w-4" />
                             <span>{displayRole}</span>
                           </span>
                         </div>
 
-                        <div className="mt-4 text-left text-sm text-gray-600 space-y-1">
+                        <div className="mt-4 text-left text-sm text-gray-600 dark:text-gray-300 space-y-1">
                           <div>
                             <span className="font-medium">Name: </span>
                             <span>{profileData.name || displayName}</span>
@@ -685,9 +667,9 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                    <div className={`rounded-3xl p-10 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                      <h1 className="text-4xl font-bold mb-6">Welcome</h1>
-                      <p className="text-gray-600 leading-relaxed mb-6">
+                    <div className="rounded-3xl p-10 bg-white dark:bg-gray-800 transition-colors duration-300">
+                      <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-gray-100">Welcome</h1>
+                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
                         Xavier Circle of Information Technology Students (XCITeS) a proud student
                         organization at Xavier University Ateneo de Cagayan is a community of
                         passionate IT students who create meaningful campus impact through service,
@@ -701,7 +683,7 @@ const Dashboard = () => {
                         community.
                       </p>
 
-                      <p className="text-gray-600 leading-relaxed">
+                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                         XCITeS strives to create an environment where students work together to
                         develop leadership, creativity, and social responsibility. By partnering
                         with university departments, local communities, and fellow organizations, we
@@ -717,9 +699,7 @@ const Dashboard = () => {
 
                       <div className="mt-8">
                         <div
-                          className={`w-full overflow-hidden rounded-3xl border border-gray-100 ${
-                            isDarkMode ? 'bg-gray-700' : ''
-                          }`}
+                          className="w-full overflow-hidden rounded-3xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-700"
                         >
                           <img
                             src="/images/xc.jpg"
@@ -735,27 +715,25 @@ const Dashboard = () => {
 
               {selectedSection === 'about' && userRole !== 'admin' && (
                 <div className="space-y-8 overflow-y-auto max-h-[calc(100vh-200px)]">
-                  <div className={`rounded-3xl p-8 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <h1 className="text-4xl font-bold mb-2">About Us!</h1>
-                    <p className="text-gray-500">Meet the leaders behind our organization</p>
+                  <div className="rounded-3xl p-8 bg-white dark:bg-gray-800 transition-colors duration-300">
+                    <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">About Us!</h1>
+                    <p className="text-gray-500 dark:text-gray-400">Meet the leaders behind our organization</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pr-2">
                     {teamMembers.map((member) => (
                       <div
                         key={member.name}
-                        className={`rounded-3xl p-6 space-y-4 flex flex-col min-h-[360px] ${
-                          isDarkMode ? 'bg-gray-800' : 'bg-white'
-                        }`}
+                        className="rounded-3xl p-6 space-y-4 flex flex-col min-h-[360px] bg-white dark:bg-gray-800 transition-colors duration-300"
                       >
                         <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
                           <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
                         </div>
                         <div>
-                          <p className="font-semibold">{member.name}</p>
-                          <p className="text-sm text-gray-500">{member.role}</p>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">{member.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{member.role}</p>
                         </div>
-                        <div className="space-y-2 text-sm text-gray-600 flex-1 overflow-y-auto">
+                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300 flex-1 overflow-y-auto">
                           <p>{member.bio1}</p>
                           <p>{member.bio2}</p>
                         </div>
@@ -766,25 +744,23 @@ const Dashboard = () => {
               )}
 
               {selectedSection === 'services' && userRole !== 'admin' && (
-                <div className={`rounded-3xl p-10 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                  <h1 className="text-4xl font-bold mb-4">Services</h1>
-                  <p className="text-gray-500">
+                <div className="rounded-3xl p-10 bg-white dark:bg-gray-800 transition-colors duration-300">
+                  <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">Services</h1>
+                  <p className="text-gray-500 dark:text-gray-400">
                     Learn more about the departments and services offered by the organization.
                   </p>
                   <div className="mt-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {serviceMembers.slice(0, 6).map((member) => (
                       <div
                         key={member.name}
-                        className={`rounded-3xl p-6 flex flex-col min-h-[260px] ${
-                          isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                        }`}
+                        className="rounded-3xl p-6 flex flex-col min-h-[260px] bg-gray-50 dark:bg-gray-700 transition-colors duration-300"
                       >
                         <div className="mb-3">
-                          <h3 className="text-base font-semibold text-gray-900">{member.name}</h3>
-                          <p className="text-xs font-medium text-gray-500 mt-1">{member.role}</p>
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{member.name}</h3>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">{member.role}</p>
                         </div>
-                        <p className="text-sm text-gray-600 leading-relaxed">{member.bio1}</p>
-                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">{member.bio2}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{member.bio1}</p>
+                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{member.bio2}</p>
                       </div>
                     ))}
                   </div>
@@ -793,9 +769,9 @@ const Dashboard = () => {
 
               {selectedSection === 'reports' && (
                 <div className="space-y-8">
-                  <div className={`rounded-3xl p-10 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <h1 className="text-4xl font-bold mb-4">Reports</h1>
-                    <p className="text-gray-500 max-w-2xl">
+                  <div className="rounded-3xl p-10 bg-white dark:bg-gray-800 transition-colors duration-300">
+                    <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">Reports</h1>
+                    <p className="text-gray-500 dark:text-gray-400 max-w-2xl">
                       Stay updated with the latest news, events, and milestones of the Student Organization.
                     </p>
                   </div>
@@ -807,22 +783,20 @@ const Dashboard = () => {
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col transition transform hover:-translate-y-1 hover:shadow-lg ${
-                          isDarkMode ? 'bg-gray-800' : 'bg-white'
-                        }`}
+                        className="rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col transition transform hover:-translate-y-1 hover:shadow-lg bg-white dark:bg-gray-800"
                       >
                         <div className="w-full h-48 overflow-hidden">
                           <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                         </div>
                         <div className="p-6 flex flex-col flex-1">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-500">
+                            <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-500/10 px-3 py-1 text-xs font-medium text-red-500 dark:text-red-400">
                               {item.tag}
                             </span>
-                            <span className="text-xs text-gray-400">{item.date}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{item.date}</span>
                           </div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h2>
-                          <p className="text-sm text-gray-600 leading-relaxed flex-1">{item.description}</p>
+                          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{item.title}</h2>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed flex-1">{item.description}</p>
                         </div>
                       </a>
                     ))}

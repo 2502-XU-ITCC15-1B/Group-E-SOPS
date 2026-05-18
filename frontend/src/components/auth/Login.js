@@ -6,36 +6,22 @@ import { Eye, EyeOff, Mail, Lock, X } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const { login, signInWithGoogle, resetPassword } = useAuth();
+  const [showAssistance, setShowAssistance] = useState(false);
+  const [assistanceEmail, setAssistanceEmail] = useState('');
+  const [assistanceReason, setAssistanceReason] = useState('');
+  const [assistanceLoading, setAssistanceLoading] = useState(false);
+  const [assistanceSuccess, setAssistanceSuccess] = useState(false);
+  const { login, signInWithGoogle, requestPasswordAssistance } = useAuth();
+
   const navigate = useNavigate();
   
   const { register, handleSubmit, formState: { errors } } = useForm();
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    if (!forgotPasswordEmail.trim()) {
-      toast.error('Please enter your email address');
-      return;
-    }
 
-    try {
-      setLoading(true);
-      await resetPassword(forgotPasswordEmail);
-      toast.success('Password reset email sent! Check your inbox.');
-      setShowForgotPassword(false);
-      setForgotPasswordEmail('');
-    } catch (error) {
-      console.error('Password reset error:', error);
-      toast.error(error.message || 'Failed to send password reset email');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const onSubmit = async (data) => {
     try {
@@ -51,6 +37,25 @@ const Login = () => {
     }
   };
 
+  const handleAssistanceSubmit = async (e) => {
+    e.preventDefault();
+    if (!assistanceEmail.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    try {
+      setAssistanceLoading(true);
+      await requestPasswordAssistance({
+        email: assistanceEmail.trim(),
+        reason: assistanceReason.trim()
+      });
+      setAssistanceSuccess(true);
+    } catch (error) {
+      toast.error(error.message || 'Failed to submit request');
+    } finally {
+      setAssistanceLoading(false);
+    }
+  };
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
@@ -149,13 +154,16 @@ const Login = () => {
                   <label className="text-sm font-medium text-gray-700">
                     Password
                   </label>
+                  <div className="flex items-center space-x-4">
                     <button
                       type="button"
-                      onClick={() => setShowForgotPassword(true)}
+                      onClick={() => setShowAssistance(true)}
                       className="text-sm text-gray-400 hover:text-[#f04b4b] transition"
                     >
                       Forgot password?
                     </button>
+
+                  </div>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -218,35 +226,106 @@ const Login = () => {
           </p>
         </div>
       </div>
-      {showForgotPassword && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md relative">
-            <button onClick={() => setShowForgotPassword(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+      {showAssistance && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative p-8">
+            <button
+              onClick={() => {
+                setShowAssistance(false);
+                setAssistanceSuccess(false);
+                setAssistanceEmail('');
+                setAssistanceReason('');
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
               <X className="h-6 w-6" />
             </button>
-            <h2 className="text-2xl font-bold mb-4">Reset Password</h2>
-            <p className="mb-4 text-gray-600">Enter your email address, and we'll send you a link to reset your password.</p>
-            <form onSubmit={handleForgotPassword}>
-              <input
-                type="email"
-                value={forgotPasswordEmail}
-                onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full px-4 py-2 border rounded-md"
-                required
-              />
-              <div className="flex justify-end gap-4 mt-6">
-                <button type="button" onClick={() => setShowForgotPassword(false)} className="px-4 py-2 text-gray-700">
-                  Cancel
-                </button>
-                <button type="submit" disabled={loading} className="px-6 py-2 bg-[#f04b4b] text-white rounded-md hover:bg-[#e43a3a] disabled:opacity-50">
-                  {loading ? 'Sending...' : 'Send Reset Link'}
+
+            {assistanceSuccess ? (
+              <div className="text-center py-4">
+                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted</h2>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Your password assistance request has been sent to the administrator. 
+                  You will receive a password reset email once your request is reviewed. 
+                  Please check your inbox after the admin responds.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowAssistance(false);
+                    setAssistanceSuccess(false);
+                    setAssistanceEmail('');
+                    setAssistanceReason('');
+                  }}
+                  className="mt-6 w-full h-12 rounded-2xl bg-[#f04b4b] text-white font-semibold hover:bg-[#e43a3a] transition"
+                >
+                  Close
                 </button>
               </div>
-            </form>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Password Assistance</h2>
+                <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                  Submit a request and an administrator will send a password reset link to your email. 
+                  Your password is never visible to anyone.
+                </p>
+                <form onSubmit={handleAssistanceSubmit} className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={assistanceEmail}
+                      onChange={(e) => setAssistanceEmail(e.target.value)}
+                      placeholder="Enter your registered email"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-800 focus:border-[#f04b4b] focus:ring-2 focus:ring-[#f04b4b]/30 transition"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                      Reason <span className="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      value={assistanceReason}
+                      onChange={(e) => setAssistanceReason(e.target.value)}
+                      placeholder="Briefly describe your issue..."
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-800 focus:border-[#f04b4b] focus:ring-2 focus:ring-[#f04b4b]/30 transition resize-none"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAssistance(false);
+                        setAssistanceEmail('');
+                        setAssistanceReason('');
+                      }}
+                      className="flex-1 h-12 rounded-2xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={assistanceLoading}
+                      className="flex-1 h-12 rounded-2xl bg-[#f04b4b] text-white font-semibold hover:bg-[#e43a3a] transition disabled:opacity-60"
+                    >
+                      {assistanceLoading ? 'Submitting...' : 'Submit Request'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
+
     </div>
   );
 };

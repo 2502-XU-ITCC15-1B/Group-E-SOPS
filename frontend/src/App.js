@@ -39,35 +39,32 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 };
 
 function App() {
-  // Apply dark mode class to html element
+  // Apply dark mode class to html element (source of truth)
   React.useEffect(() => {
-    const isDarkMode = localStorage.getItem('theme') === 'dark';
-    const root = document.documentElement;
-    if (isDarkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    
-    // Listen for theme changes
-    const handleStorageChange = () => {
-      const newIsDarkMode = localStorage.getItem('theme') === 'dark';
-      if (newIsDarkMode) {
+    const applyTheme = () => {
+      const isDark = localStorage.getItem('theme') === 'dark';
+      const root = document.documentElement;
+      if (isDark) {
         root.classList.add('dark');
       } else {
         root.classList.remove('dark');
       }
     };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('theme-change', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('theme-change', handleStorageChange);
-    };
 
-    
+    // Apply immediately on mount
+    applyTheme();
+
+    // Listen for same-tab changes from Dashboard toggle
+    window.addEventListener('theme-change', applyTheme);
+    // Listen for cross-tab changes
+    window.addEventListener('storage', applyTheme);
+
+    return () => {
+      window.removeEventListener('theme-change', applyTheme);
+      window.removeEventListener('storage', applyTheme);
+    };
   }, []);
+
 
 
   return (
@@ -84,7 +81,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Navigation />
-                  <main className="min-h-screen bg-gray-50">
+                  <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                     <Dashboard />
                   </main>
                 </ProtectedRoute>
@@ -95,7 +92,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Navigation />
-                  <main className="min-h-screen bg-gray-50">
+                  <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                     <MemberProfile />
                   </main>
                 </ProtectedRoute>
@@ -106,7 +103,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Navigation />
-                  <main className="min-h-screen bg-gray-50">
+                  <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                     <Directory />
                   </main>
                 </ProtectedRoute>
@@ -117,7 +114,7 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <Navigation />
-                  <main className="min-h-screen bg-gray-50">
+                  <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                     <AdminPanel />
                   </main>
                 </ProtectedRoute>
@@ -128,7 +125,7 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin', 'executive']}>
                   <Navigation />
-                  <main className="min-h-screen bg-gray-50">
+                  <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                     <ExecutivePanel />
                   </main>
                 </ProtectedRoute>

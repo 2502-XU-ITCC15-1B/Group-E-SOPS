@@ -10,7 +10,7 @@ import {
   GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, addDoc, collection, serverTimestamp, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, addDoc, collection, serverTimestamp, onSnapshot, deleteDoc, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 const AuthContext = createContext();
@@ -189,30 +189,92 @@ export function AuthProvider({ children }) {
       });
 
       // Log the change
-      await addDoc(collection(db, 'roleAudit'), {
+      await logEvent({
+        type: 'role_change',
+        action: `Changed role to ${newRole}`,
+        performedBy: currentUser.uid,
+        performedByEmail: currentUser.email,
         targetUserId: uid,
-        changedBy: currentUser.uid,
-        changedByEmail: currentUser.email,
-        newRole,
-        timestamp: serverTimestamp()
+        details: `User role for UID ${uid} was updated to ${newRole}.`
       });
 
       // Update local state immediately if changing own role
       if (uid === currentUser?.uid) {
         setUserRole(newRole);
       }
-
       return { success: true };
     } catch (error) {
       console.error('Error updating user role:', error);
       throw error;
     }
-  }, [currentUser]);
+  }, [currentUser, logEvent]);
 
   const resetPassword = useCallback(async (email) => {
     if (!email) throw new Error('Email is required to reset password');
     await sendPasswordResetEmail(auth, email);
   }, []);
+
+  const requestPasswordAssistance = useCallback(async ({ email, reason }) => {
+    // Find user UID to associate with the request
+    const usersQuery = query(collection(db, 'users'), where('email', '==', email), limit(1));
+    const userSnapshot = await getDocs(usersQuery);
+    const userDoc = userSnapshot.docs[0];
+    const uid = userDoc ? userDoc.id : null;
+
+    // Check for existing pending request to prevent spam
+    const existingQuery = query(
+      collection(db, 'passwordResetRequests'),
+      where('email', '==', email),
+      where('status', '==', 'pending')
+    );
+    const existing = await getDocs(existingQuery);
+    if (!existing.empty) {
+      throw new Error('You already have a pending assistance request. Please wait for an admin to respond.');
+    }
+
+    await addDoc(collection(db, 'passwordResetRequests'), {
+      uid: uid,
+      email,
+      reason: reason || '',
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      resolvedAt: null,
+      adminNote: '',
+      resolvedBy: null
+    });
+
+    await logEvent({
+      type: 'password_assistance_requested',
+      userId: uid,
+      email
+    });
+  }, [logEvent]);
+
+  const resolvePasswordRequest = useCallback(async ({ requestId, action, adminNote, email }) => {
+    // action is 'resolved' or 'rejected'
+    const ref = doc(db, 'passwordResetRequests', requestId);
+
+    if (action === 'resolved') {
+      // Send Firebase password reset email — Firebase handles this securely
+      // Admin never sees or sets the password
+      await sendPasswordResetEmail(auth, email);
+    }
+
+    await updateDoc(ref, {
+      status: action,
+      adminNote: adminNote || '',
+      resolvedBy: currentUser.uid,
+      resolvedAt: serverTimestamp()
+    });
+
+    await logEvent({
+      type: `password_request_${action}`,
+      requestId,
+      performedBy: currentUser.uid,
+      email: currentUser.email,
+      targetEmail: email
+    });
+  }, [currentUser, logEvent]);
 
   const deleteSelf = useCallback(async () => {
     await deleteDoc(doc(db, 'users', currentUser.uid));
@@ -249,9 +311,9 @@ export function AuthProvider({ children }) {
       if (user) {
         setCurrentUser(user);
         try {
-          // Read role from Firestore instead of JWT claims
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          const role = userDoc.exists() ? (userDoc.data()?.role || 'member') : 'member';
+          // Priority 1: Get role from custom claims for security.
+          const idTokenResult = await user.getIdTokenResult();
+          const role = idTokenResult.claims.role || 'member';
           setUserRole(role);
           ensureUserDocument(user);
         } catch (error) {
@@ -279,13 +341,10 @@ export function AuthProvider({ children }) {
       if (!firestoreRole) return;
 
       if (firestoreRole !== userRole) {
-        try {
-          const idTokenResult = await currentUser.getIdTokenResult(true);
-          const claimsRole = idTokenResult.claims.role || 'member';
-          setUserRole(claimsRole);
-        } catch (error) {
-          console.error('Failed to refresh token after role change:', error);
-        }
+        // The role in Firestore is different from our current state.
+        // Force a token refresh. This will trigger onIdTokenChanged, which
+        // will then update the state from the new claims.
+        currentUser.getIdTokenResult(true).catch(err => console.error('Forced token refresh failed:', err));
       }
     });
 
@@ -306,7 +365,9 @@ export function AuthProvider({ children }) {
     deleteSelf,
     adminDeleteUser,
     adminCreateUser,
-    logEvent
+    logEvent,
+    requestPasswordAssistance,
+    resolvePasswordRequest
   }), [
     currentUser, 
     userRole, 
@@ -320,7 +381,9 @@ export function AuthProvider({ children }) {
     deleteSelf, 
     adminDeleteUser, 
     adminCreateUser, 
-    logEvent]);
+    logEvent,
+    requestPasswordAssistance,
+    resolvePasswordRequest]);
 
   return (
     <AuthContext.Provider value={value}>
