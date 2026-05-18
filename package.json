@@ -5,7 +5,7 @@
   "scripts": {
     "install:all": "npm install --prefix frontend && npm install --prefix functions",
     "start": "npm start --prefix frontend",
-    "build": "npm run build --prefix frontend",
+    "build": "npm install --prefix frontend && npm run build --prefix frontend",
     "deploy": "npm run build --prefix frontend && firebase deploy",
     "test": "npm test --prefix frontend"
   },
