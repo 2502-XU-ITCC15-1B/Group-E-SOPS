@@ -22,7 +22,7 @@ import {
 import toast from 'react-hot-toast';
 
 const MemberProfile = () => {
-  const { currentUser, userRole, logout, deleteSelf, logEvent, resetPassword } = useAuth();
+  const { currentUser, userRole, logout, deleteSelf, resetPassword } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -54,11 +54,6 @@ const MemberProfile = () => {
     try {
       setChangingPassword(true);
       await resetPassword(currentUser.email);
-      await logEvent({ 
-        type: 'password_reset_requested', 
-        userId: currentUser.uid, 
-        email: currentUser.email 
-      });
       toast.success('Password reset email sent! Check your inbox.');
       setShowPasswordChange(false);
     } catch (error) {
@@ -102,7 +97,6 @@ const MemberProfile = () => {
       });
       
       setProfile({ ...profile, ...normalizedData });
-      await logEvent({ type: 'profile_update', userId: currentUser.uid, email: currentUser.email });
       setIsEditing(false);
       toast.success('Profile updated successfully!');
     } catch (error) {
@@ -123,7 +117,6 @@ const MemberProfile = () => {
       });
       
       setProfile({ ...profile, isActive: false });
-      await logEvent({ type: 'profile_deactivated', userId: currentUser.uid, email: currentUser.email });
       toast.success('Profile deactivated successfully!');
       setShowDeleteModal(false);
     } catch (error) {
@@ -138,7 +131,6 @@ const MemberProfile = () => {
     try {
       setDeleting(true);
       await deleteSelf();
-      await logEvent({ type: 'profile_deleted', userId: currentUser.uid, email: currentUser.email });
       toast.success('Profile deleted successfully!');
       navigate('/');
     } catch (error) {

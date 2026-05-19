@@ -32,7 +32,7 @@ import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 
 const ExecutivePanel = () => {
-  const { currentUser, userRole, logEvent } = useAuth();
+  const { currentUser, userRole } = useAuth();
   const [allUsers, setAllUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
@@ -249,16 +249,6 @@ const notificationPromises = allRecipients.map(user => {
 await Promise.all(notificationPromises);
 console.log('All notifications created successfully');
 
-
-      // Log activity
-      await logEvent({ 
-        type: 'announcement_create', 
-        userId: currentUser.uid,
-        email: currentUser.email,
-        action: `${userRole === 'admin' ? 'Admin' : 'Executive'} ${currentUser.email} created announcement: ${newAnnouncement.title}`,
-        description: newAnnouncement.title
-      });
-
       toast.success('Announcement created and sent to all members!');
       setAnnouncementTitle('');
       setAnnouncementContent('');
@@ -284,13 +274,6 @@ console.log('All notifications created successfully');
           ...projectForm,
           updatedAt: serverTimestamp()
         });
-        await logEvent({ 
-          type: 'project_update', 
-          userId: currentUser.uid,
-          email: currentUser.email,
-          action: `Executive ${currentUser.email} updated project: ${projectForm.name}`,
-          description: projectForm.name
-        });
         toast.success('Project updated successfully!');
       } else {
         // Create new project
@@ -301,13 +284,6 @@ console.log('All notifications created successfully');
           progress: 0
         };
         await addDoc(collection(db, 'projects'), newProject);
-        await logEvent({ 
-          type: 'project_create', 
-          userId: currentUser.uid,
-          email: currentUser.email,
-          action: `Executive ${currentUser.email} created project: ${projectForm.name}`,
-          description: projectForm.name
-        });
         toast.success('Project created successfully!');
       }
       
@@ -334,13 +310,6 @@ console.log('All notifications created successfully');
 
     try {
       await deleteDoc(doc(db, 'projects', projectId));
-      await logEvent({ 
-        type: 'project_delete', 
-        userId: currentUser.uid,
-        email: currentUser.email,
-        action: `Executive ${currentUser.email} deleted project: ${projectId}`,
-        description: projectId
-      });
       toast.success('Project deleted successfully!');
     } catch (error) {
       console.error('Error deleting project:', error);
@@ -368,13 +337,6 @@ console.log('All notifications created successfully');
 
     try {
       await deleteDoc(doc(db, 'announcements', announcementId));
-      await logEvent({ 
-        type: 'announcement_delete', 
-        userId: currentUser.uid,
-        email: currentUser.email,
-        action: `${userRole === 'admin' ? 'Admin' : 'Executive'} ${currentUser.email} deleted announcement`,
-        description: announcementId
-      });
       toast.success('Announcement deleted successfully!');
     } catch (error) {
       console.error('Error deleting announcement:', error);
