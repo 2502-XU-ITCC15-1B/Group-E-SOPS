@@ -14,7 +14,6 @@ import {
   Save, 
   X,
   Phone,
-  MapPin,
   Briefcase,
   Trash2,
   AlertTriangle
@@ -50,6 +49,7 @@ const MemberProfile = () => {
       window.removeEventListener('storage', handleThemeChange);
     };
   }, []);
+
   const handleChangePassword = async () => {
     try {
       setChangingPassword(true);
@@ -165,6 +165,7 @@ const MemberProfile = () => {
         <title>Profile — XCITeS SOPS</title>
         <meta name="description" content="Manage your XCITeS member profile." />
       </Helmet>
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -198,10 +199,7 @@ const MemberProfile = () => {
             ) : (
               <div className="flex space-x-2">
                 <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    reset(profile);
-                  }}
+                  onClick={() => { setIsEditing(false); reset(profile); }}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   <X className="h-4 w-4 mr-2" />
@@ -225,12 +223,14 @@ const MemberProfile = () => {
       {/* Profile Form */}
       <form id="profile-form" onSubmit={handleSubmit(onSubmit)}>
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg transition-colors duration-300">
+
           {/* Basic Information */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Basic Information</h3>
           </div>
-          
+
           <div className="px-6 py-4 space-y-6">
+            {/* Name row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -269,6 +269,7 @@ const MemberProfile = () => {
               </div>
             </div>
 
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email Address
@@ -280,6 +281,7 @@ const MemberProfile = () => {
               </div>
             </div>
 
+            {/* Phone + Birthday */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -333,54 +335,36 @@ const MemberProfile = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Organizational Position
-                </label>
-                {isEditing ? (
-                  <select
-                    {...register('organizationPosition')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Select Position</option>
-                    <option value="Member">Member</option>
-                    <option value="Volunteer">Volunteer</option>
-                    <option value="Committee Member">Committee Member</option>
-                    <option value="Events Staff">Events Staff</option>
-                    <option value="Auditor">Auditor</option>
-                    <option value="Secretary">Secretary</option>
-                    <option value="Treasurer">Treasurer</option>
-                    <option value="Vice President">Vice President</option>
-                    <option value="President">President</option>
-                  </select>
-                ) : (
+            {/* Organizational Position only (department removed) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Organizational Position
+              </label>
+              {isEditing ? (
+                <select
+                  {...register('organizationPosition')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Select Position</option>
+                  <option value="Member">Member</option>
+                  <option value="Volunteer">Volunteer</option>
+                  <option value="Committee Member">Committee Member</option>
+                  <option value="Events Staff">Events Staff</option>
+                  <option value="Auditor">Auditor</option>
+                  <option value="Secretary">Secretary</option>
+                  <option value="Treasurer">Treasurer</option>
+                  <option value="Vice President">Vice President</option>
+                  <option value="President">President</option>
+                </select>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-gray-400" />
                   <p className="text-gray-900 dark:text-gray-100">{profile?.organizationPosition || 'Not provided'}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Department
-                </label>
-                {isEditing ? (
-                  <select
-                    {...register('department')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Select Department</option>
-                    <option value="Media Relations & Creatives">Media Relations & Creatives</option>
-                    <option value="Events & Logistics">Events & Logistics</option>
-                    <option value="Student Services & Academics">Student Services & Academics</option>
-                    <option value="Social Engagement & External Affairs">Social Engagement & External Affairs</option>
-                    <option value="Recreation & Sports">Recreation & Sports</option>
-                  </select>
-                ) : (
-                  <p className="text-gray-900 dark:text-gray-100">{profile?.department || 'Not provided'}</p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
+            {/* Location */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Location
@@ -397,6 +381,7 @@ const MemberProfile = () => {
               )}
             </div>
 
+            {/* Bio */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Bio
@@ -418,7 +403,7 @@ const MemberProfile = () => {
           <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Account Information</h3>
           </div>
-          
+
           <div className="px-6 py-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -487,13 +472,10 @@ const MemberProfile = () => {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  We'll send a password reset link to your email address: <strong>{currentUser.email}</strong>
-                </p>
-              </div>
-
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                We'll send a password reset link to your email address:{' '}
+                <strong>{currentUser.email}</strong>
+              </p>
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   onClick={() => setShowPasswordChange(false)}
@@ -528,10 +510,10 @@ const MemberProfile = () => {
                 Delete or Deactivate Profile
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
-                Choose an option below. Deactivating will disable your account temporarily, 
+                Choose an option below. Deactivating will disable your account temporarily,
                 while deleting will permanently remove your profile.
               </p>
-              
+
               <div className="space-y-3">
                 <button
                   onClick={handleDeactivate}
@@ -541,7 +523,7 @@ const MemberProfile = () => {
                   <AlertTriangle className="h-4 w-4 mr-2" />
                   {saving ? 'Deactivating...' : 'Deactivate Profile'}
                 </button>
-                
+
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
@@ -550,7 +532,7 @@ const MemberProfile = () => {
                   <Trash2 className="h-4 w-4 mr-2" />
                   {deleting ? 'Deleting...' : 'Delete Profile Permanently'}
                 </button>
-                
+
                 <button
                   onClick={() => setShowDeleteModal(false)}
                   className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
