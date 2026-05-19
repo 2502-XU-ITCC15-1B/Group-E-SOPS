@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import LandingPage from './components/landing/LandingPage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
@@ -11,32 +11,10 @@ import AdminPanel from './components/admin/AdminPanel';
 import ExecutivePanel from './components/executive/ExecutivePanel';
 import Directory from './components/directory/Directory';
 import Navigation from './components/layout/Navigation';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import { AdminRoute } from './components/auth/AdminRoute';
+import { ExecutiveRoute } from './components/auth/ExecutiveRoute';
 import './App.css';
-
-// Protected Route Component with enhanced RBAC
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { currentUser, userRole, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  // Require authentication token (currentUser) for all protected routes
-  if (!currentUser) {
-    return <Navigate to="/login" />;
-  }
-
-  // Check role-based access if specific roles are required
-  if (allowedRoles.length > 0 && (!userRole || !allowedRoles.includes(userRole))) {
-    return <Navigate to="/dashboard" />;
-  }
-
-  return children;
-};
 
 function App() {
   // Apply dark mode class to html element (source of truth)
@@ -112,23 +90,22 @@ function App() {
             <Route 
               path="/admin" 
               element={
-                <ProtectedRoute allowedRoles={['admin']}>
+                <AdminRoute>
                   <Navigation />
                   <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                     <AdminPanel />
-                  </main>
-                </ProtectedRoute>
+                  </main>                </AdminRoute>
               } 
             />
             <Route 
               path="/executive" 
               element={
-                <ProtectedRoute allowedRoles={['admin', 'executive']}>
+                <ExecutiveRoute>
                   <Navigation />
                   <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                     <ExecutivePanel />
                   </main>
-                </ProtectedRoute>
+                </ExecutiveRoute>
               } 
             />
           </Routes>

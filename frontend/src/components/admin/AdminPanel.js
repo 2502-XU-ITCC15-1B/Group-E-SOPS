@@ -23,7 +23,7 @@ import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 
 const AdminPanel = () => {
-  const { currentUser, updateUserRole, adminDeleteUser, logEvent, resolvePasswordRequest } = useAuth();
+  const { currentUser, updateUserRole, adminDeleteUser, resolvePasswordRequest } = useAuth();
   const [users, setUsers] = useState([]);
   const [systemLogs, setSystemLogs] = useState([]);
   const [passwordRequests, setPasswordRequests] = useState([]);
@@ -124,7 +124,6 @@ const AdminPanel = () => {
         user.id === userId ? { ...user, role: newRole } : user
       ));
       toast.success('User role updated successfully');
-      await logEvent({ type: 'role_change', targetUserId: userId, newRole, performedBy: currentUser.uid, email: currentUser.email });
       fetchSystemLogs();
     } catch (error) {
       console.error('Error updating user role:', error);
@@ -138,7 +137,6 @@ const AdminPanel = () => {
         await adminDeleteUser(userId);
         setUsers(users.filter(user => user.id !== userId));
         toast.success('User deleted successfully');
-        await logEvent({ type: 'user_deleted', targetUserId: userId, performedBy: currentUser.uid, email: currentUser.email });
         fetchSystemLogs();
       } catch (error) {
         console.error('Error deleting user:', error);
@@ -154,7 +152,6 @@ const AdminPanel = () => {
         updatedAt: new Date().toISOString()
       });
       setUsers(users.map(u => u.id === user.id ? { ...u, isActive: user.isActive === false ? true : false } : u));
-      await logEvent({ type: 'status_change', targetUserId: user.id, isActive: user.isActive === false ? true : false, performedBy: currentUser.uid, email: currentUser.email });
       fetchSystemLogs();
     } catch (error) {
       console.error('Error toggling status:', error);
