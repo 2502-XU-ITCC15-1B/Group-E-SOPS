@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../contexts/AuthContext';
+import { logEvent } from '../../components/auth/authService';
 import {
   parseSpreadsheetToRecords,
   replaceDirectoryEntries,
@@ -19,11 +20,13 @@ import {
   Mail,
   Briefcase,
   Phone,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Directory = () => {
-  const { userRole, logEvent, currentUser } = useAuth();
+  const { userRole, currentUser } = useAuth();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -31,6 +34,10 @@ const Directory = () => {
   const [positionFilter, setPositionFilter] = useState('all');
   const [importing, setImporting] = useState(false);
   const [importMode, setImportMode] = useState('replace');
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const isAdmin = userRole === 'admin';
   const canManage = userRole === 'admin' || userRole === 'executive';
 
   const loadEntries = async () => {
@@ -105,20 +112,9 @@ const Directory = () => {
       if (positionFilter !== 'all' && e.position !== positionFilter) return false;
       if (!q) return true;
       const blob = [
-        e.fullName,
-        e.firstName,
-        e.lastName,
-        e.department,
-        e.position,
-        e.email,
-        e.phone,
-        e.nickname,
-        e.birthdate,
-        e.sex,
-        e.preferredPronouns,
-        e.photo,
-        e.signatures,
-        e.schedules,
+        e.fullName, e.firstName, e.lastName, e.department, e.position,
+        e.email, e.phone, e.nickname, e.birthdate, e.sex,
+        e.preferredPronouns, e.photo, e.signatures, e.schedules,
       ]
         .filter(Boolean)
         .join(' ')
@@ -149,10 +145,7 @@ const Directory = () => {
         const ok = window.confirm(
           `Replace the entire directory with ${rowCount} row(s) from "${file.name}"? Existing entries will be removed.`
         );
-        if (!ok) {
-          setImporting(false);
-          return;
-        }
+        if (!ok) { setImporting(false); return; }
         await replaceDirectoryEntries(db, records);
         toast.success(`Imported ${rowCount} directory row(s) (replaced all).`);
       } else {
@@ -160,6 +153,7 @@ const Directory = () => {
         toast.success(`Merged ${rowCount} directory row(s).`);
       }
 
+      // logEvent imported directly from authService — not from useAuth
       await logEvent({
         type: 'directory_import',
         mode: importMode,
@@ -177,6 +171,61 @@ const Directory = () => {
     }
   };
 
+  // Delete a single entry (admin only)
+  const handleDeleteEntry = async (id) => {
+    if (!isAdmin) return;
+    try {
+      setDeletingId(id);
+      await deleteDoc(doc(db, 'directory', id));
+      setEntries((prev) => prev.filter((e) => e.id !== id));
+      toast.success('Entry deleted.');
+      await logEvent({
+        type: 'directory_delete_entry',
+        entryId: id,
+        performedBy: currentUser?.uid,
+        email: currentUser?.email,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete entry.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // Delete ALL entries (admin only)
+  const handleDeleteAll = async () => {
+    if (!isAdmin) return;
+    try {
+      setDeletingAll(true);
+      const snap = await getDocs(collection(db, 'directory'));
+      const refs = snap.docs.map((d) => d.ref);
+      const BATCH_SIZE = 500;
+
+      for (let i = 0; i < refs.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db);
+        refs.slice(i, i + BATCH_SIZE).forEach((ref) => batch.delete(ref));
+        await batch.commit();
+      }
+
+      setEntries([]);
+      toast.success('All directory entries deleted.');
+      setShowDeleteAllModal(false);
+
+      await logEvent({
+        type: 'directory_delete_all',
+        count: refs.length,
+        performedBy: currentUser?.uid,
+        email: currentUser?.email,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete all entries.');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
@@ -188,22 +237,34 @@ const Directory = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <BookOpen className="h-8 w-8 text-blue-600" />
-          Member directory
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Officers and members by department. Import from an Excel or CSV export when needed.
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <BookOpen className="h-8 w-8 text-blue-600" />
+              Member directory
+            </h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Officers and members by department. Import from an Excel or CSV export when needed.
+            </p>
+          </div>
 
+          {/* Admin-only: Delete All button */}
+          {isAdmin && entries.length > 0 && (
+            <button
+              onClick={() => setShowDeleteAllModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 shadow transition"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete All Data
+            </button>
+          )}
+        </div>
       </div>
 
       {canManage && (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-100 dark:border-gray-700 mb-8">
-
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-
               <Upload className="h-5 w-5 text-blue-600" />
               Import spreadsheet
             </h2>
@@ -289,9 +350,7 @@ const Directory = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
-
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/80">
-
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/80">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -311,9 +370,7 @@ const Directory = () => {
               >
                 <option value="all">All departments</option>
                 {departments.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
+                  <option key={d} value={d}>{d}</option>
                 ))}
               </select>
               <select
@@ -323,9 +380,7 @@ const Directory = () => {
               >
                 <option value="all">All positions</option>
                 {positions.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
+                  <option key={p} value={p}>{p}</option>
                 ))}
               </select>
             </div>
@@ -335,30 +390,21 @@ const Directory = () => {
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 dark:bg-gray-900">
-
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Department
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Position
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  More
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">More</th>
+                {isAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={isAdmin ? 6 : 5} className="px-6 py-12 text-center text-gray-500">
                     {entries.length === 0
                       ? 'No directory data yet. Import a spreadsheet if you have access, or check back later.'
                       : 'No rows match your filters.'}
@@ -366,12 +412,12 @@ const Directory = () => {
                 </tr>
               )}
               {filtered.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50">
+                <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                     <div>{row.fullName}</div>
                     {(row.nickname || row.preferredPronouns) && (
                       <div className="text-xs font-normal text-gray-500 dark:text-gray-400 mt-0.5">
-                        {[row.nickname && `“${row.nickname}”`, row.preferredPronouns]
+                        {[row.nickname && `"${row.nickname}"`, row.preferredPronouns]
                           .filter(Boolean)
                           .join(' · ')}
                       </div>
@@ -393,17 +439,12 @@ const Directory = () => {
                         <Briefcase className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                         {row.position}
                       </span>
-                    ) : (
-                      '—'
-                    )}
+                    ) : '—'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex flex-col gap-1">
                       {row.email && (
-                        <a
-                          href={`mailto:${row.email}`}
-                          className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                        >
+                        <a href={`mailto:${row.email}`} className="inline-flex items-center gap-1 text-blue-600 hover:underline">
                           <Mail className="h-3.5 w-3.5" />
                           {row.email}
                         </a>
@@ -421,39 +462,76 @@ const Directory = () => {
                     <div className="space-y-1">
                       {[row.birthdate, row.sex].filter(Boolean).join(' · ') || null}
                       {row.schedules && (
-                        <div className="line-clamp-2" title={row.schedules}>
-                          {row.schedules}
-                        </div>
+                        <div className="line-clamp-2" title={row.schedules}>{row.schedules}</div>
                       )}
                       {row.photo && (
-                        <a
-                          href={row.photo}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline block truncate"
-                        >
+                        <a href={row.photo} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block truncate">
                           Photo link
                         </a>
                       )}
                       {row.signatures && (
-                        <div className="line-clamp-2" title={row.signatures}>
-                          Sig.: {row.signatures}
-                        </div>
+                        <div className="line-clamp-2" title={row.signatures}>Sig.: {row.signatures}</div>
                       )}
-                      {!row.birthdate &&
-                        !row.sex &&
-                        !row.schedules &&
-                        !row.photo &&
-                        !row.signatures &&
-                        '—'}
+                      {!row.birthdate && !row.sex && !row.schedules && !row.photo && !row.signatures && '—'}
                     </div>
                   </td>
+
+                  {isAdmin && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => handleDeleteEntry(row.id)}
+                        disabled={deletingId === row.id}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition disabled:opacity-50"
+                        title="Delete this entry"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {deletingId === row.id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Delete All Confirmation Modal */}
+      {showDeleteAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="h-14 w-14 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-7 w-7 text-red-600" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              Delete All Directory Data?
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6 leading-relaxed">
+              This will permanently remove all <strong>{entries.length}</strong> entries from the
+              member directory. This action cannot be undone. Use this only for demo resets.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                disabled={deletingAll}
+                className="flex-1 h-11 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                disabled={deletingAll}
+                className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deletingAll ? 'Deleting…' : 'Delete All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

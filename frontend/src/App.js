@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LandingPage from './components/landing/LandingPage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
@@ -16,6 +16,43 @@ import { AdminRoute } from './components/auth/AdminRoute';
 import { ExecutiveRoute } from './components/auth/ExecutiveRoute';
 import './App.css';
 
+/**
+ * PublicRoute: if the user is already authenticated, log them out first
+ * then render the public page. Uses a ref so it only fires once per mount,
+ * preventing interference with the login / Google SSO flows.
+ */
+function PublicRoute({ children }) {
+  const { currentUser, logout, loading } = useAuth();
+  const [ready, setReady] = React.useState(false);
+  const didRun = React.useRef(false);
+
+  React.useEffect(() => {
+    if (loading) return;
+
+    if (didRun.current) return;
+    didRun.current = true;
+
+    if (currentUser) {
+      // A session is active — the user navigated back, so end it.
+      logout()
+        .catch((err) => console.error('PublicRoute logout error:', err))
+        .finally(() => setReady(true));
+    } else {
+      setReady(true);
+    }
+  }, [loading, currentUser, logout]);
+
+  if (loading || !ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#241f1f]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-[#f04b4b]" />
+      </div>
+    );
+  }
+
+  return children;
+}
+
 function App() {
   // Apply dark mode class to html element (source of truth)
   React.useEffect(() => {
@@ -29,12 +66,9 @@ function App() {
       }
     };
 
-    // Apply immediately on mount
     applyTheme();
 
-    // Listen for same-tab changes from Dashboard toggle
     window.addEventListener('theme-change', applyTheme);
-    // Listen for cross-tab changes
     window.addEventListener('storage', applyTheme);
 
     return () => {
@@ -43,19 +77,36 @@ function App() {
     };
   }, []);
 
-
-
   return (
     <AuthProvider>
       <Router>
         <div className="App">
           <Toaster position="top-right" />
           <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
+            {/* Public routes — terminate any active session on arrival */}
+            <Route
+              path="/"
+              element={
+                <PublicRoute>
+                  <LandingPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+
+            {/* Register keeps its own flow (no auto-logout needed) */}
             <Route path="/register" element={<Register />} />
-            <Route 
-              path="/dashboard" 
+
+            {/* Protected routes */}
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Navigation />
@@ -63,10 +114,10 @@ function App() {
                     <Dashboard />
                   </main>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/profile" 
+            <Route
+              path="/profile"
               element={
                 <ProtectedRoute>
                   <Navigation />
@@ -74,10 +125,10 @@ function App() {
                     <MemberProfile />
                   </main>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/directory" 
+            <Route
+              path="/directory"
               element={
                 <ProtectedRoute>
                   <Navigation />
@@ -85,20 +136,21 @@ function App() {
                     <Directory />
                   </main>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/admin" 
+            <Route
+              path="/admin"
               element={
                 <AdminRoute>
                   <Navigation />
                   <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                     <AdminPanel />
-                  </main>                </AdminRoute>
-              } 
+                  </main>
+                </AdminRoute>
+              }
             />
-            <Route 
-              path="/executive" 
+            <Route
+              path="/executive"
               element={
                 <ExecutiveRoute>
                   <Navigation />
@@ -106,7 +158,7 @@ function App() {
                     <ExecutivePanel />
                   </main>
                 </ExecutiveRoute>
-              } 
+              }
             />
           </Routes>
         </div>
